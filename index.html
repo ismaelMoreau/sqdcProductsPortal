@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQDC - Portail des Produits</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="sqdc-logo">SQDC</div>
+                <h1>Portail des Produits</h1>
+            </div>
+            <div class="store-info">
+                <span class="store-label">Succursale: 77074</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="controls">
+        <div class="filter-section">
+            <h3>Type de Cannabis</h3>
+            <div class="filter-buttons" role="group" aria-label="Filtres de type de cannabis">
+                <button class="filter-btn active" data-type="all" aria-pressed="true" aria-label="Afficher tous les types">
+                    <span>Tous</span>
+                </button>
+                <button class="filter-btn active" data-type="Indica" aria-pressed="true" aria-label="Filtrer par type Indica">
+                    <span class="icon indica-icon">●</span>
+                    <span>Indica</span>
+                </button>
+                <button class="filter-btn active" data-type="Sativa" aria-pressed="true" aria-label="Filtrer par type Sativa">
+                    <span class="icon sativa-icon">●</span>
+                    <span>Sativa</span>
+                </button>
+                <button class="filter-btn active" data-type="Hybride" aria-pressed="true" aria-label="Filtrer par type Hybride">
+                    <span class="icon hybride-icon">●</span>
+                    <span>Hybride</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <input type="text" id="searchInput" placeholder="Rechercher par nom ou marque..." aria-label="Rechercher des produits par nom ou marque">
+        </div>
+
+        <div class="sort-section">
+            <label for="sortSelect">Trier par:</label>
+            <select id="sortSelect" aria-label="Trier les produits">
+                <option value="name">Nom</option>
+                <option value="brand">Marque</option>
+                <option value="thc-desc">THC (Plus élevé)</option>
+                <option value="thc-asc">THC (Plus faible)</option>
+            </select>
+        </div>
+    </div>
+
+    <main>
+        <section class="strain-section indica-section" aria-labelledby="indica-title">
+            <div class="section-header">
+                <span class="section-icon indica-icon">●</span>
+                <h2 id="indica-title">Indica</h2>
+                <span class="product-count" id="indica-count" aria-live="polite" aria-atomic="true">0</span>
+            </div>
+            <div class="subsection">
+                <div class="subsection-header">3,5 g</div>
+                <div class="grid-wrapper">
+                    <div class="scroll-arrow scroll-arrow-left" role="button" tabindex="0" aria-label="Faire défiler les produits vers la gauche">‹</div>
+                    <div class="products-grid" id="indica-grid-3.5g"></div>
+                    <div class="scroll-arrow scroll-arrow-right" role="button" tabindex="0" aria-label="Faire défiler les produits vers la droite">›</div>
+                </div>
+            </div>
+            <div class="subsection">
+                <div class="subsection-header">Autres formats</div>
+                <div class="grid-wrapper">
+                    <div class="scroll-arrow scroll-arrow-left">‹</div>
+                    <div class="products-grid" id="indica-grid-other"></div>
+                    <div class="scroll-arrow scroll-arrow-right">›</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="strain-section sativa-section">
+            <div class="section-header">
+                <span class="section-icon sativa-icon">●</span>
+                <h2>Sativa</h2>
+                <span class="product-count" id="sativa-count">0</span>
+            </div>
+            <div class="subsection">
+                <div class="subsection-header">3,5 g</div>
+                <div class="grid-wrapper">
+                    <div class="scroll-arrow scroll-arrow-left">‹</div>
+                    <div class="products-grid" id="sativa-grid-3.5g"></div>
+                    <div class="scroll-arrow scroll-arrow-right">›</div>
+                </div>
+            </div>
+            <div class="subsection">
+                <div class="subsection-header">Autres formats</div>
+                <div class="grid-wrapper">
+                    <div class="scroll-arrow scroll-arrow-left">‹</div>
+                    <div class="products-grid" id="sativa-grid-other"></div>
+                    <div class="scroll-arrow scroll-arrow-right">›</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="strain-section oz28-section">
+            <div class="section-header">
+                <span class="section-icon oz28-icon">●</span>
+                <h2>28g</h2>
+                <span class="product-count" id="oz28-count">0</span>
+            </div>
+            <div class="subsection">
+                <div class="grid-wrapper">
+                    <div class="scroll-arrow scroll-arrow-left">‹</div>
+                    <div class="products-grid oz28-grid" id="oz28-grid"></div>
+                    <div class="scroll-arrow scroll-arrow-right">›</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="strain-section hybride-section">
+            <div class="section-header">
+                <span class="section-icon hybride-icon">●</span>
+                <h2>Hybride</h2>
+                <span class="product-count" id="hybride-count">0</span>
+            </div>
+            <div class="subsection">
+                <div class="subsection-header">3,5 g</div>
+                <div class="grid-wrapper">
+                    <div class="scroll-arrow scroll-arrow-left">‹</div>
+                    <div class="products-grid" id="hybride-grid-3.5g"></div>
+                    <div class="scroll-arrow scroll-arrow-right">›</div>
+                </div>
+            </div>
+            <div class="subsection">
+                <div class="subsection-header">Autres formats</div>
+                <div class="grid-wrapper">
+                    <div class="scroll-arrow scroll-arrow-left">‹</div>
+                    <div class="products-grid" id="hybride-grid-other"></div>
+                    <div class="scroll-arrow scroll-arrow-right">›</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Tooltip for product details -->
+    <div class="product-tooltip" id="productTooltip">
+        <div class="tooltip-name" id="tooltipName"></div>
+        <div class="tooltip-brand" id="tooltipBrand"></div>
+        <div class="tooltip-format" id="tooltipFormat"></div>
+        <div class="tooltip-sku" id="tooltipSku"></div>
+        <div class="tooltip-thc">
+            <div class="tooltip-thc-info">
+                <div class="tooltip-label">THC</div>
+                <div class="tooltip-value" id="tooltipThc"></div>
+            </div>
+            <div class="tooltip-thc-info" id="tooltipCbdSection" style="display: none;">
+                <div class="tooltip-label">CBD</div>
+                <div class="tooltip-value" id="tooltipCbd" style="color: #4CAF50;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="editModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Modifier le produit</h3>
+            </div>
+            <div class="modal-body">
+                <div class="modal-product-name" id="modalProductName" aria-live="polite"></div>
+
+                <div class="modal-field">
+                    <label for="modalSectionSelect">Section:</label>
+                    <select id="modalSectionSelect" aria-label="Sélectionner la section du produit">
+                        <option value="Indica">Indica</option>
+                        <option value="Sativa">Sativa</option>
+                        <option value="Hybride">Hybride</option>
+                        <option value="28g">28g</option>
+                    </select>
+                </div>
+
+                <div class="modal-field" id="modalFormatField">
+                    <label>Format:</label>
+                    <div class="radio-group" role="radiogroup" aria-label="Sélectionner le format du produit">
+                        <label class="radio-label">
+                            <input type="radio" name="format" value="3,5 g" id="modalFormat35" aria-label="Format 3,5 grammes">
+                            <span>3,5 g</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="format" value="other" id="modalFormatOther" aria-label="Autres formats">
+                            <span>Autres formats</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-field">
+                    <label for="modalThcInput">THC %:</label>
+                    <input type="number" id="modalThcInput" step="0.1" min="0" max="100" aria-label="Pourcentage THC entre 0 et 100" aria-required="false">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-cancel" id="modalCancelBtn" aria-label="Annuler les modifications">Annuler</button>
+                <button class="modal-btn modal-btn-save" id="modalSaveBtn" aria-label="Sauvegarder les modifications">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="products-data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
