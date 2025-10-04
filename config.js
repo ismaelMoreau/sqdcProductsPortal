@@ -38,6 +38,12 @@ const CONFIG = {
         INDICA: 'indica-count',
         SATIVA: 'sativa-count',
         OZ28: 'oz28-count',
-        HYBRIDE: 'hybride-count'
+        HYBRIDE: 'hybride-count',
+        INDICA_35G: 'indica-3.5g-count',
+        INDICA_OTHER: 'indica-other-count',
+        SATIVA_35G: 'sativa-3.5g-count',
+        SATIVA_OTHER: 'sativa-other-count',
+        HYBRIDE_35G: 'hybride-3.5g-count',
+        HYBRIDE_OTHER: 'hybride-other-count'
     }
 };

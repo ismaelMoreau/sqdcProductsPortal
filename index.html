@@ -54,7 +54,10 @@
                 <span class="product-count" id="indica-count" aria-live="polite" aria-atomic="true">0</span>
             </div>
             <div class="subsection">
-                <div class="subsection-header">3,5 g</div>
+                <div class="subsection-header">
+                    <span>3,5 g</span>
+                    <span class="subsection-count" id="indica-3.5g-count">0</span>
+                </div>
                 <div class="grid-wrapper">
                     <div class="scroll-arrow scroll-arrow-left" role="button" tabindex="0" aria-label="Faire défiler les produits vers la gauche">‹</div>
                     <div class="products-grid" id="indica-grid-3.5g"></div>
@@ -62,7 +65,10 @@
                 </div>
             </div>
             <div class="subsection">
-                <div class="subsection-header">Autres formats</div>
+                <div class="subsection-header">
+                    <span>Autres formats</span>
+                    <span class="subsection-count" id="indica-other-count">0</span>
+                </div>
                 <div class="grid-wrapper">
                     <div class="scroll-arrow scroll-arrow-left">‹</div>
                     <div class="products-grid" id="indica-grid-other"></div>
@@ -78,7 +84,10 @@
                 <span class="product-count" id="sativa-count">0</span>
             </div>
             <div class="subsection">
-                <div class="subsection-header">3,5 g</div>
+                <div class="subsection-header">
+                    <span>3,5 g</span>
+                    <span class="subsection-count" id="sativa-3.5g-count">0</span>
+                </div>
                 <div class="grid-wrapper">
                     <div class="scroll-arrow scroll-arrow-left">‹</div>
                     <div class="products-grid" id="sativa-grid-3.5g"></div>
@@ -86,7 +95,10 @@
                 </div>
             </div>
             <div class="subsection">
-                <div class="subsection-header">Autres formats</div>
+                <div class="subsection-header">
+                    <span>Autres formats</span>
+                    <span class="subsection-count" id="sativa-other-count">0</span>
+                </div>
                 <div class="grid-wrapper">
                     <div class="scroll-arrow scroll-arrow-left">‹</div>
                     <div class="products-grid" id="sativa-grid-other"></div>
@@ -117,7 +129,10 @@
                 <span class="product-count" id="hybride-count">0</span>
             </div>
             <div class="subsection">
-                <div class="subsection-header">3,5 g</div>
+                <div class="subsection-header">
+                    <span>3,5 g</span>
+                    <span class="subsection-count" id="hybride-3.5g-count">0</span>
+                </div>
                 <div class="grid-wrapper">
                     <div class="scroll-arrow scroll-arrow-left">‹</div>
                     <div class="products-grid" id="hybride-grid-3.5g"></div>
@@ -125,7 +140,10 @@
                 </div>
             </div>
             <div class="subsection">
-                <div class="subsection-header">Autres formats</div>
+                <div class="subsection-header">
+                    <span>Autres formats</span>
+                    <span class="subsection-count" id="hybride-other-count">0</span>
+                </div>
                 <div class="grid-wrapper">
                     <div class="scroll-arrow scroll-arrow-left">‹</div>
                     <div class="products-grid" id="hybride-grid-other"></div>
@@ -154,11 +172,39 @@
         </div>
     </div>
 
+    <!-- Image Viewer Modal -->
+    <div class="modal-overlay" id="imageModal" role="dialog" aria-modal="true" aria-labelledby="imageModalTitle">
+        <div class="image-modal-content">
+            <div class="image-modal-header">
+                <h3 id="imageModalTitle"></h3>
+                <button class="image-modal-close" id="imageModalCloseBtn" aria-label="Fermer la visualisation">&times;</button>
+            </div>
+            <div class="image-modal-body">
+                <div class="image-modal-file-selector" id="imageModalFileSelector" style="display: none;">
+                    <p><strong>Plusieurs fiches trouvées. Choisissez laquelle visualiser:</strong></p>
+                    <div id="imageModalFileList" class="file-list"></div>
+                    <button id="imageModalDisplayBtn" class="modal-btn modal-btn-save">Afficher</button>
+                </div>
+                <img id="imageModalImg" src="" alt="Image du produit" style="display: none;">
+                <iframe id="imageModalPdf" src="" style="display: none;"></iframe>
+                <div class="image-modal-loading" id="imageModalLoading" style="display: none;">
+                    <p>Recherche des fiches...</p>
+                </div>
+                <div class="image-modal-error" id="imageModalError" style="display: none;">
+                    <p>Aucune fiche trouvée pour ce produit</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Edit Modal -->
     <div class="modal-overlay" id="editModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modalTitle">Modifier le produit</h3>
+                <button class="modal-view-image-btn" id="modalViewImageBtn" aria-label="Visualiser l'image du produit">
+                    <span>👁</span> Voir l'image
+                </button>
             </div>
             <div class="modal-body">
                 <div class="modal-product-name" id="modalProductName" aria-live="polite"></div>
@@ -174,17 +220,17 @@
                 </div>
 
                 <div class="modal-field" id="modalFormatField">
-                    <label>Format:</label>
-                    <div class="radio-group" role="radiogroup" aria-label="Sélectionner le format du produit">
-                        <label class="radio-label">
-                            <input type="radio" name="format" value="3,5 g" id="modalFormat35" aria-label="Format 3,5 grammes">
-                            <span>3,5 g</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="format" value="other" id="modalFormatOther" aria-label="Autres formats">
-                            <span>Autres formats</span>
-                        </label>
-                    </div>
+                    <label for="modalFormatSelect">Format:</label>
+                    <select id="modalFormatSelect" aria-label="Sélectionner le format du produit">
+                        <option value="3,5 g">3,5 g</option>
+                        <option value="1 g">1 g</option>
+                        <option value="7 g">7 g</option>
+                        <option value="28 g">28 g</option>
+                        <option value="Préroulé 3x0,5g">Préroulé 3x0,5g</option>
+                        <option value="Préroulé 5x0,5g">Préroulé 5x0,5g</option>
+                        <option value="Préroulé 10x0,35g">Préroulé 10x0,35g</option>
+                        <option value="Préroulé 1x1g">Préroulé 1x1g</option>
+                    </select>
                 </div>
 
                 <div class="modal-field">
@@ -206,6 +252,7 @@
 
     <script src="config.js"></script>
     <script src="products-data.js"></script>
+    <script src="files-index-data.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

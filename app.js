@@ -13,6 +13,9 @@ let dragState = {
     dropTarget: null
 };
 
+// Files index is loaded from files-index-data.js (embedded to avoid CORS issues)
+// window.FILES_INDEX is available globally
+
 // Load products
 async function loadProducts() {
     try {
@@ -102,9 +105,17 @@ function sortProducts() {
 // Create product card HTML
 function createProductCard(product) {
     const thcValue = product.manualThc || product.thcMax;
+    const cbdValue = product.manualCbd || product.cbdMax || 0;
 
     // Determine card type for styling - 28g products get special type
     const cardType = product.format === CONFIG.FORMATS.LARGE ? CONFIG.TYPES.OZ28 : product.type;
+
+    // Show format for non-3.5g products
+    const showFormat = product.format !== CONFIG.FORMATS.SMALL;
+    const formatDisplay = product.manualFormat || product.format;
+
+    // Show CBD if it exists
+    const showCbd = cbdValue > 0;
 
     return `
         <div class="product-card"
@@ -117,6 +128,8 @@ function createProductCard(product) {
             <div class="product-thc">
                 <div class="thc-value">${thcValue}%</div>
             </div>
+            ${showFormat ? `<div class="product-format">${formatDisplay}</div>` : ''}
+            ${showCbd ? `<div class="product-cbd">CBD: ${cbdValue}%</div>` : ''}
         </div>
     `;
 }
@@ -316,12 +329,34 @@ function updateCounts() {
         [CONFIG.TYPES.HYBRIDE]: 0
     };
 
+    const subsectionCounts = {
+        indica35g: 0,
+        indicaOther: 0,
+        sativa35g: 0,
+        sativaOther: 0,
+        hybride35g: 0,
+        hybrideOther: 0
+    };
+
     filteredProducts.forEach(product => {
         // Count 28g products separately
         if (product.format === CONFIG.FORMATS.LARGE) {
             counts[CONFIG.TYPES.OZ28]++;
         } else if (counts[product.type] !== undefined) {
             counts[product.type]++;
+
+            // Count subsections for 3.5g vs other formats
+            const is35g = product.format === CONFIG.FORMATS.SMALL;
+            if (product.type === CONFIG.TYPES.INDICA) {
+                if (is35g) subsectionCounts.indica35g++;
+                else subsectionCounts.indicaOther++;
+            } else if (product.type === CONFIG.TYPES.SATIVA) {
+                if (is35g) subsectionCounts.sativa35g++;
+                else subsectionCounts.sativaOther++;
+            } else if (product.type === CONFIG.TYPES.HYBRIDE) {
+                if (is35g) subsectionCounts.hybride35g++;
+                else subsectionCounts.hybrideOther++;
+            }
         }
     });
 
@@ -329,6 +364,14 @@ function updateCounts() {
     document.getElementById(CONFIG.COUNT_IDS.SATIVA).textContent = counts[CONFIG.TYPES.SATIVA];
     document.getElementById(CONFIG.COUNT_IDS.OZ28).textContent = counts[CONFIG.TYPES.OZ28];
     document.getElementById(CONFIG.COUNT_IDS.HYBRIDE).textContent = counts[CONFIG.TYPES.HYBRIDE];
+
+    // Update subsection counts
+    document.getElementById(CONFIG.COUNT_IDS.INDICA_35G).textContent = subsectionCounts.indica35g;
+    document.getElementById(CONFIG.COUNT_IDS.INDICA_OTHER).textContent = subsectionCounts.indicaOther;
+    document.getElementById(CONFIG.COUNT_IDS.SATIVA_35G).textContent = subsectionCounts.sativa35g;
+    document.getElementById(CONFIG.COUNT_IDS.SATIVA_OTHER).textContent = subsectionCounts.sativaOther;
+    document.getElementById(CONFIG.COUNT_IDS.HYBRIDE_35G).textContent = subsectionCounts.hybride35g;
+    document.getElementById(CONFIG.COUNT_IDS.HYBRIDE_OTHER).textContent = subsectionCounts.hybrideOther;
 }
 
 // Modal functions for editing cards (using SKU for unique identification)
@@ -342,8 +385,7 @@ function openEditModalBySku(sku) {
     const modalSectionSelect = document.getElementById('modalSectionSelect');
     const modalThcInput = document.getElementById('modalThcInput');
     const modalCbdInput = document.getElementById('modalCbdInput');
-    const modalFormat35 = document.getElementById('modalFormat35');
-    const modalFormatOther = document.getElementById('modalFormatOther');
+    const modalFormatSelect = document.getElementById('modalFormatSelect');
 
     // Store the SKU and previous focus for later use
     modal.dataset.editingSku = sku;
@@ -356,12 +398,9 @@ function openEditModalBySku(sku) {
     const currentSection = product.format === CONFIG.FORMATS.LARGE ? CONFIG.TYPES.OZ28 : product.type;
     modalSectionSelect.value = currentSection;
 
-    // Set current format radio buttons
-    if (product.format === CONFIG.FORMATS.SMALL) {
-        modalFormat35.checked = true;
-    } else {
-        modalFormatOther.checked = true;
-    }
+    // Set current format
+    const currentFormat = product.manualFormat || product.format;
+    modalFormatSelect.value = currentFormat;
 
     // Show/hide format selector based on section
     updateFormatFieldVisibility();
@@ -459,8 +498,8 @@ function getModalFormValues() {
     const newSection = document.getElementById('modalSectionSelect').value;
     const newThc = document.getElementById('modalThcInput').value.trim();
     const newCbd = document.getElementById('modalCbdInput').value.trim();
-    const modalFormat35 = document.getElementById('modalFormat35');
-    const newFormat = modalFormat35.checked ? CONFIG.FORMATS.SMALL : 'other';
+    const modalFormatSelect = document.getElementById('modalFormatSelect');
+    const newFormat = modalFormatSelect.value;
 
     // Validate THC if provided
     if (newThc) {
@@ -507,22 +546,10 @@ function updateProductSection(product, newSection, newFormat) {
             saveProductTypeChange(product.sku, newSection);
         }
 
-        // Determine target format
-        let targetFormat;
-        if (newFormat === CONFIG.FORMATS.SMALL) {
-            targetFormat = CONFIG.FORMATS.SMALL;
-        } else {
-            // "other" format - keep current or default to medium
-            if (product.format === CONFIG.FORMATS.SMALL || product.format === CONFIG.FORMATS.LARGE) {
-                targetFormat = CONFIG.FORMATS.MEDIUM;
-            } else {
-                targetFormat = product.format;
-            }
-        }
-
-        if (product.format !== targetFormat) {
-            product.format = targetFormat;
-            saveProductFormatChange(product.sku, targetFormat);
+        // Update format with the specific selected value
+        if (product.format !== newFormat) {
+            product.format = newFormat;
+            saveProductFormatChange(product.sku, newFormat);
         }
     }
 }
@@ -938,6 +965,285 @@ function hideTooltip() {
     tooltip.classList.remove('active');
 }
 
+// Image viewer functions - returns array of possible file paths to try (URL encoded)
+function getProductImagePath(product) {
+    // Map product to correct folder based on type and format
+    let folder = '';
+
+    if (product.format === CONFIG.FORMATS.LARGE) {
+        // 28g products
+        folder = 'dried_flower_15_28g';
+    } else if (product.format === CONFIG.FORMATS.SMALL) {
+        // 3.5g products
+        if (product.type === CONFIG.TYPES.INDICA) {
+            folder = 'dried_flower_indica_35g';
+        } else if (product.type === CONFIG.TYPES.SATIVA) {
+            folder = 'dried_flower_sativa_35g';
+        } else if (product.type === CONFIG.TYPES.HYBRIDE) {
+            folder = 'dried_flower_hybrid_35g';
+        }
+    } else {
+        // Other formats (7g, etc.)
+        if (product.type === CONFIG.TYPES.INDICA) {
+            folder = 'dried_flower_indica_35g'; // Fallback to 3.5g folder
+        } else if (product.type === CONFIG.TYPES.SATIVA) {
+            folder = 'dried_flower_sativa_35g';
+        } else if (product.type === CONFIG.TYPES.HYBRIDE) {
+            folder = 'dried_flower_hybrid_35g';
+        }
+    }
+
+    // Helper function to normalize filename to match renamed files
+    function normalizeName(name) {
+        return name.toLowerCase()
+            .replace(/ - /g, '_')
+            .replace(/-/g, '_')
+            .replace(/ /g, '_')
+            .replace(/'/g, '')
+            .replace(/#/g, '')
+            .replace(/\//g, '_')
+            .replace(/[()]/g, '')
+            .replace(/,/g, '')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+    }
+
+    // Build array of possible paths to try
+    // Try name-only FIRST (more likely to match since SKUs often don't match)
+    // Prioritize images over PDFs (better error detection)
+    const normalizedName = normalizeName(product.name);
+    const possiblePaths = [
+        `fiche_produits/${folder}/${normalizedName}.png`,
+        `fiche_produits/${folder}/${normalizedName}.jpg`,
+        `fiche_produits/${folder}/${normalizedName}.jpeg`,
+        `fiche_produits/${folder}/${normalizedName}.pdf`,
+        `fiche_produits/${folder}/${normalizedName}_${product.sku}.png`,
+        `fiche_produits/${folder}/${normalizedName}_${product.sku}.jpg`,
+        `fiche_produits/${folder}/${normalizedName}_${product.sku}.jpeg`,
+        `fiche_produits/${folder}/${normalizedName}_${product.sku}.pdf`
+    ];
+
+    return possiblePaths;
+}
+
+// Fuzzy search: find files that match any word from product name
+function findMatchingFilesInIndex(product, folder) {
+    // Get list of files for this folder from index (loaded from files-index-data.js)
+    const folderFiles = window.FILES_INDEX[folder] || [];
+
+    if (folderFiles.length === 0) {
+        console.log('No files in index for folder:', folder);
+        return [];
+    }
+
+    // Extract words from product name (lowercase, min 3 chars)
+    const removeAccents = (str) => {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    };
+
+    const productWords = removeAccents(product.name.toLowerCase())
+        .split(/[\s\-_]+/)
+        .filter(word => word.length >= 3);
+
+    console.log('Searching for product:', product.name);
+    console.log('Search words:', productWords);
+    console.log('Available files:', folderFiles.length);
+
+    // Find files that contain ANY of the product words
+    const matchingFiles = [];
+
+    folderFiles.forEach(filename => {
+        const filenameLower = removeAccents(filename.toLowerCase());
+
+        // Check if filename contains any of the product words
+        for (const word of productWords) {
+            if (filenameLower.includes(word)) {
+                matchingFiles.push({
+                    filename: filename,
+                    path: `fiche_produits/${folder}/${filename}`,
+                    matchedWord: word
+                });
+                break; // Don't add same file multiple times
+            }
+        }
+    });
+
+    console.log('Matching files found:', matchingFiles.length);
+
+    return matchingFiles;
+}
+
+function openImageViewer(sku) {
+    const product = allProducts.find(p => p.sku === sku);
+    if (!product) return;
+
+    const modal = document.getElementById('imageModal');
+    const modalTitle = document.getElementById('imageModalTitle');
+    const modalImg = document.getElementById('imageModalImg');
+    const modalPdf = document.getElementById('imageModalPdf');
+    const modalError = document.getElementById('imageModalError');
+    const modalFileSelector = document.getElementById('imageModalFileSelector');
+
+    // Set title
+    modalTitle.textContent = product.name;
+
+    // Hide all content
+    modalImg.style.display = 'none';
+    modalPdf.style.display = 'none';
+    modalError.style.display = 'none';
+
+    // Show modal
+    modal.classList.add('active');
+
+    // Get folder for this product
+    const folder = getProductFolder(product);
+    if (!folder) {
+        modalError.style.display = 'block';
+        return;
+    }
+
+    // Find matching files using fuzzy search on the index
+    const matchingFiles = findMatchingFilesInIndex(product, folder);
+
+    if (matchingFiles.length === 0) {
+        // No matches found
+        modalError.style.display = 'block';
+    } else if (matchingFiles.length === 1) {
+        // Exactly one match - display it directly
+        displayFile(matchingFiles[0].path);
+    } else {
+        // Multiple matches - show selection UI
+        showFileSelector(matchingFiles);
+    }
+}
+
+function getProductFolder(product) {
+    let folder = '';
+
+    if (product.format === CONFIG.FORMATS.LARGE) {
+        folder = 'dried_flower_15_28g';
+    } else if (product.format === CONFIG.FORMATS.SMALL) {
+        if (product.type === CONFIG.TYPES.INDICA) {
+            folder = 'dried_flower_indica_35g';
+        } else if (product.type === CONFIG.TYPES.SATIVA) {
+            folder = 'dried_flower_sativa_35g';
+        } else if (product.type === CONFIG.TYPES.HYBRIDE) {
+            folder = 'dried_flower_hybrid_35g';
+        }
+    } else {
+        if (product.type === CONFIG.TYPES.INDICA) {
+            folder = 'dried_flower_indica_35g';
+        } else if (product.type === CONFIG.TYPES.SATIVA) {
+            folder = 'dried_flower_sativa_35g';
+        } else if (product.type === CONFIG.TYPES.HYBRIDE) {
+            folder = 'dried_flower_hybrid_35g';
+        }
+    }
+
+    return folder;
+}
+
+function showFileSelector(files) {
+    const modalFileSelector = document.getElementById('imageModalFileSelector');
+    const modalFileList = document.getElementById('imageModalFileList');
+
+    // Clear previous list
+    modalFileList.innerHTML = '';
+
+    // Create radio buttons for each file
+    files.forEach((file, index) => {
+        const label = document.createElement('label');
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'ficheProduit';
+        radio.value = file.path;
+        radio.id = `file_${index}`;
+
+        if (index === 0) radio.checked = true; // Select first by default
+
+        label.appendChild(radio);
+        label.appendChild(document.createTextNode(` ${file.filename}`));
+        modalFileList.appendChild(label);
+
+        // Add click handler to highlight selected
+        label.addEventListener('click', () => {
+            document.querySelectorAll('.file-list label').forEach(l => l.classList.remove('selected'));
+            label.classList.add('selected');
+        });
+
+        // Mark first as selected
+        if (index === 0) label.classList.add('selected');
+    });
+
+    modalFileSelector.style.display = 'block';
+}
+
+function displayFile(path) {
+    console.log('displayFile called with:', path);
+
+    const modalImg = document.getElementById('imageModalImg');
+    const modalPdf = document.getElementById('imageModalPdf');
+    const modalFileSelector = document.getElementById('imageModalFileSelector');
+    const modalError = document.getElementById('imageModalError');
+    const modalLoading = document.getElementById('imageModalLoading');
+
+    // Hide everything first
+    modalFileSelector.style.display = 'none';
+    modalError.style.display = 'none';
+    modalLoading.style.display = 'none';
+    modalImg.style.display = 'none';
+    modalPdf.style.display = 'none';
+
+    const isPdf = path.toLowerCase().endsWith('.pdf');
+
+    console.log('File type:', isPdf ? 'PDF' : 'Image');
+
+    if (isPdf) {
+        modalPdf.src = path;
+        modalPdf.style.display = 'block';
+        console.log('PDF src set:', modalPdf.src);
+    } else {
+        modalImg.src = path;
+        modalImg.style.display = 'block';
+        console.log('Image src set:', modalImg.src);
+
+        // Add onload/onerror handlers
+        modalImg.onload = () => console.log('Image loaded successfully');
+        modalImg.onerror = () => console.error('Image failed to load:', path);
+    }
+}
+
+function closeImageViewer() {
+    const modal = document.getElementById('imageModal');
+    modal.classList.remove('active');
+
+    // Clear both image and PDF sources to stop loading
+    const modalImg = document.getElementById('imageModalImg');
+    const modalPdf = document.getElementById('imageModalPdf');
+    modalImg.src = '';
+    modalPdf.src = '';
+
+    // Hide all elements
+    modalImg.style.display = 'none';
+    modalPdf.style.display = 'none';
+    document.getElementById('imageModalLoading').style.display = 'none';
+    document.getElementById('imageModalError').style.display = 'none';
+    document.getElementById('imageModalFileSelector').style.display = 'none';
+}
+
+function openImageViewerFromModal() {
+    const editModal = document.getElementById('editModal');
+    const sku = editModal.dataset.editingSku;
+
+    if (!sku) return;
+
+    // Close edit modal first
+    closeEditModal();
+
+    // Then open image viewer
+    openImageViewer(sku);
+}
+
 // Setup event listeners
 function setupEventListeners() {
     // Filter buttons
@@ -1028,11 +1334,15 @@ function setupEventListeners() {
         }
     });
 
-    // Keyboard accessibility: Escape key to close modal
+    // Keyboard accessibility: Escape key to close modals
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            const modal = document.getElementById('editModal');
-            if (modal && modal.classList.contains('active')) {
+            const imageModal = document.getElementById('imageModal');
+            const editModal = document.getElementById('editModal');
+
+            if (imageModal && imageModal.classList.contains('active')) {
+                closeImageViewer();
+            } else if (editModal && editModal.classList.contains('active')) {
                 closeEditModal();
             }
         }
@@ -1065,9 +1375,10 @@ document.addEventListener('DOMContentLoaded', () => {
         setupScrollArrows(grid);
     });
 
-    // Setup modal event listeners
+    // Setup edit modal event listeners
     const modalCancelBtn = document.getElementById('modalCancelBtn');
     const modalSaveBtn = document.getElementById('modalSaveBtn');
+    const modalViewImageBtn = document.getElementById('modalViewImageBtn');
     const modalOverlay = document.getElementById('editModal');
     const modalSectionSelect = document.getElementById('modalSectionSelect');
 
@@ -1076,6 +1387,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (modalSaveBtn) {
         modalSaveBtn.addEventListener('click', saveCardChanges);
+    }
+    if (modalViewImageBtn) {
+        modalViewImageBtn.addEventListener('click', openImageViewerFromModal);
     }
     // Close modal when clicking outside
     if (modalOverlay) {
@@ -1088,5 +1402,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update format field visibility when section changes
     if (modalSectionSelect) {
         modalSectionSelect.addEventListener('change', updateFormatFieldVisibility);
+    }
+
+    // Setup image modal event listeners
+    const imageModalCloseBtn = document.getElementById('imageModalCloseBtn');
+    const imageModalOverlay = document.getElementById('imageModal');
+    const imageModalDisplayBtn = document.getElementById('imageModalDisplayBtn');
+
+    if (imageModalCloseBtn) {
+        imageModalCloseBtn.addEventListener('click', closeImageViewer);
+    }
+
+    if (imageModalDisplayBtn) {
+        imageModalDisplayBtn.addEventListener('click', () => {
+            // Get selected radio button
+            const selected = document.querySelector('input[name="ficheProduit"]:checked');
+            if (selected) {
+                displayFile(selected.value);
+            }
+        });
+    }
+
+    // Close image modal when clicking outside
+    if (imageModalOverlay) {
+        imageModalOverlay.addEventListener('click', (e) => {
+            if (e.target === imageModalOverlay) {
+                closeImageViewer();
+            }
+        });
     }
 });
