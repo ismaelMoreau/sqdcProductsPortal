@@ -14,13 +14,16 @@ const CONFIG = {
     },
     STORAGE_KEYS: {
         THC_CHANGES: 'sqdcThcChanges',
+        CBD_CHANGES: 'sqdcCbdChanges',
         TYPE_CHANGES: 'sqdcProductTypeChanges',
         FORMAT_CHANGES: 'sqdcFormatChanges',
         PRODUCT_ORDER: 'sqdcProductOrder'
     },
     VALIDATION: {
         THC_MIN: 0,
-        THC_MAX: 100
+        THC_MAX: 100,
+        CBD_MIN: 0,
+        CBD_MAX: 100
     },
     GRID_IDS: {
         INDICA_35G: 'indica-grid-3.5g',

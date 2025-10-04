@@ -42,3 +42,6 @@ temp/
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
+
+# Legacy/old portal folder
+oldportal/

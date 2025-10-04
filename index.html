@@ -44,16 +44,6 @@
         <div class="search-section">
             <input type="text" id="searchInput" placeholder="Rechercher par nom ou marque..." aria-label="Rechercher des produits par nom ou marque">
         </div>
-
-        <div class="sort-section">
-            <label for="sortSelect">Trier par:</label>
-            <select id="sortSelect" aria-label="Trier les produits">
-                <option value="name">Nom</option>
-                <option value="brand">Marque</option>
-                <option value="thc-desc">THC (Plus élevé)</option>
-                <option value="thc-asc">THC (Plus faible)</option>
-            </select>
-        </div>
     </div>
 
     <main>
@@ -200,6 +190,11 @@
                 <div class="modal-field">
                     <label for="modalThcInput">THC %:</label>
                     <input type="number" id="modalThcInput" step="0.1" min="0" max="100" aria-label="Pourcentage THC entre 0 et 100" aria-required="false">
+                </div>
+
+                <div class="modal-field">
+                    <label for="modalCbdInput">CBD %:</label>
+                    <input type="number" id="modalCbdInput" step="0.1" min="0" max="100" aria-label="Pourcentage CBD entre 0 et 100" aria-required="false">
                 </div>
             </div>
             <div class="modal-footer">

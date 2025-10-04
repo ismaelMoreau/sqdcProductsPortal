@@ -23,6 +23,7 @@ async function loadProducts() {
         applyProductTypeChanges();
         loadProductFormatChanges();
         loadThcChanges();
+        loadCbdChanges();
         filteredProducts = [...allProducts];
         renderProducts();
         updateCounts();
@@ -34,6 +35,7 @@ async function loadProducts() {
             applyProductTypeChanges();
             loadProductFormatChanges();
             loadThcChanges();
+            loadCbdChanges();
             filteredProducts = [...allProducts];
             renderProducts();
             updateCounts();
@@ -339,6 +341,7 @@ function openEditModalBySku(sku) {
     const modalProductName = document.getElementById('modalProductName');
     const modalSectionSelect = document.getElementById('modalSectionSelect');
     const modalThcInput = document.getElementById('modalThcInput');
+    const modalCbdInput = document.getElementById('modalCbdInput');
     const modalFormat35 = document.getElementById('modalFormat35');
     const modalFormatOther = document.getElementById('modalFormatOther');
 
@@ -366,6 +369,10 @@ function openEditModalBySku(sku) {
     // Set current THC value
     const currentThc = product.manualThc || product.thcMax;
     modalThcInput.value = currentThc;
+
+    // Set current CBD value
+    const currentCbd = product.manualCbd || '';
+    modalCbdInput.value = currentCbd;
 
     // Show modal
     modal.classList.add('active');
@@ -415,6 +422,17 @@ function validateThcValue(value) {
     return { valid: true, value: thc };
 }
 
+function validateCbdValue(value) {
+    const cbd = parseFloat(value);
+    if (isNaN(cbd)) {
+        return { valid: false, error: 'La valeur CBD doit être un nombre' };
+    }
+    if (cbd < CONFIG.VALIDATION.CBD_MIN || cbd > CONFIG.VALIDATION.CBD_MAX) {
+        return { valid: false, error: `CBD doit être entre ${CONFIG.VALIDATION.CBD_MIN}% et ${CONFIG.VALIDATION.CBD_MAX}%` };
+    }
+    return { valid: true, value: cbd };
+}
+
 function showValidationError(message) {
     // Create or update error message element
     let errorDiv = document.getElementById('modalError');
@@ -440,6 +458,7 @@ function clearValidationError() {
 function getModalFormValues() {
     const newSection = document.getElementById('modalSectionSelect').value;
     const newThc = document.getElementById('modalThcInput').value.trim();
+    const newCbd = document.getElementById('modalCbdInput').value.trim();
     const modalFormat35 = document.getElementById('modalFormat35');
     const newFormat = modalFormat35.checked ? CONFIG.FORMATS.SMALL : 'other';
 
@@ -449,10 +468,23 @@ function getModalFormValues() {
         if (!validation.valid) {
             return { valid: false, error: validation.error };
         }
-        return { valid: true, section: newSection, thc: validation.value, format: newFormat };
     }
 
-    return { valid: true, section: newSection, thc: null, format: newFormat };
+    // Validate CBD if provided
+    if (newCbd) {
+        const validation = validateCbdValue(newCbd);
+        if (!validation.valid) {
+            return { valid: false, error: validation.error };
+        }
+    }
+
+    return {
+        valid: true,
+        section: newSection,
+        thc: newThc ? parseFloat(newThc) : null,
+        cbd: newCbd ? parseFloat(newCbd) : null,
+        format: newFormat
+    };
 }
 
 // Helper: Find product by SKU
@@ -541,11 +573,17 @@ function saveCardChanges() {
         product.manualThc = formData.thc.toString();
     }
 
+    // Update CBD if provided
+    if (formData.cbd !== null) {
+        product.manualCbd = formData.cbd.toString();
+    }
+
     // Update section/type and format
     updateProductSection(product, formData.section, formData.format);
 
     // Save changes and close modal
     saveThcChanges();
+    saveCbdChanges();
     closeEditModal();
 
     // Refresh display to show changes
@@ -583,6 +621,40 @@ function loadThcChanges() {
         }
     } catch (error) {
         console.error('Error loading THC changes:', error);
+    }
+}
+
+function saveCbdChanges() {
+    try {
+        const cbdChanges = {};
+        allProducts.forEach(product => {
+            if (product.manualCbd) {
+                cbdChanges[product.sku] = product.manualCbd;
+            }
+        });
+        localStorage.setItem(CONFIG.STORAGE_KEYS.CBD_CHANGES, JSON.stringify(cbdChanges));
+    } catch (error) {
+        console.error('Error saving CBD changes:', error);
+        if (error.name === 'QuotaExceededError') {
+            console.warn('LocalStorage quota exceeded. Consider clearing old data.');
+            showValidationError('Erreur: Espace de stockage insuffisant');
+        }
+    }
+}
+
+function loadCbdChanges() {
+    try {
+        const saved = localStorage.getItem(CONFIG.STORAGE_KEYS.CBD_CHANGES);
+        if (saved) {
+            const cbdChanges = JSON.parse(saved);
+            allProducts.forEach(product => {
+                if (cbdChanges[product.sku]) {
+                    product.manualCbd = cbdChanges[product.sku];
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error loading CBD changes:', error);
     }
 }
 
@@ -921,12 +993,12 @@ function setupEventListeners() {
         filterProducts();
     });
 
-    // Sort select
-    const sortSelect = document.getElementById('sortSelect');
-    sortSelect.addEventListener('change', (e) => {
-        sortBy = e.target.value;
-        filterProducts();
-    });
+    // Sort select - removed from UI
+    // const sortSelect = document.getElementById('sortSelect');
+    // sortSelect.addEventListener('change', (e) => {
+    //     sortBy = e.target.value;
+    //     filterProducts();
+    // });
 
     // Event delegation for product cards (click and hover)
     document.addEventListener('click', (e) => {
