@@ -18,6 +18,9 @@ let dragState = {
 
 // Load products
 async function loadProducts() {
+    // Static UI mode - load from embedded data only
+    // Web server fetch commented out for static file usage
+    /*
     try {
         // Try to fetch from JSON file first (if using web server)
         const response = await fetch('products.json');
@@ -32,7 +35,8 @@ async function loadProducts() {
         updateCounts();
     } catch (error) {
         console.error('Error loading products from file, trying embedded data:', error);
-        // Fallback to embedded data
+    */
+        // Load from embedded data (products-data.js)
         if (window.PRODUCTS_DATA && window.PRODUCTS_DATA.length > 0) {
             allProducts = window.PRODUCTS_DATA;
             applyProductTypeChanges();
@@ -45,7 +49,9 @@ async function loadProducts() {
         } else {
             document.querySelector('main').innerHTML = '<div class="empty-state">Erreur lors du chargement des produits</div>';
         }
+    /*
     }
+    */
 }
 
 function applyProductTypeChanges() {
