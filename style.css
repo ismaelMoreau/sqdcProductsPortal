@@ -59,6 +59,26 @@ h1 {
 .store-info {
     font-size: 1.1rem;
     color: white;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.print-lists-link {
+    background-color: var(--sqdc-yellow);
+    color: var(--sqdc-black);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    border: 2px solid var(--sqdc-yellow);
+}
+
+.print-lists-link:hover {
+    background-color: var(--sqdc-light-yellow);
+    border-color: var(--sqdc-light-yellow);
 }
 
 .controls {
@@ -408,6 +428,12 @@ main {
 
 .product-card.hidden {
     display: none;
+}
+
+/* Hidden by search/filter - keeps card in DOM and preserves its space in grid */
+.product-card.card-hidden {
+    visibility: hidden;
+    pointer-events: none;
 }
 
 /* Drag and drop states */

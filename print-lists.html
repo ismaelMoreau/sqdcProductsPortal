@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQDC - Listes d'impression</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="print-lists.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="sqdc-logo">SQDC</div>
+                <h1>Listes d'impression</h1>
+            </div>
+            <div class="header-actions">
+                <a href="index.html" class="btn-secondary">← Retour au portail</a>
+                <span class="store-label">Succursale: 77074</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Left Sidebar: Lists Management -->
+        <aside class="lists-sidebar">
+            <div class="sidebar-header">
+                <h2>Mes Listes</h2>
+                <button id="createListBtn" class="btn-primary">
+                    <span>+ Nouvelle liste</span>
+                </button>
+            </div>
+            <div id="listsContainer" class="lists-container">
+                <!-- Lists will be rendered here -->
+            </div>
+        </aside>
+
+        <!-- Center: List Editor -->
+        <main class="list-editor">
+            <div id="emptyState" class="empty-state-container">
+                <div class="empty-state">
+                    <h2>Aucune liste sélectionnée</h2>
+                    <p>Créez votre première liste ou sélectionnez-en une</p>
+                </div>
+            </div>
+
+            <div id="listEditorContent" class="list-editor-content" style="display: none;">
+                <div class="editor-header">
+                    <div class="list-title-section">
+                        <h2 id="currentListName">Ma Liste</h2>
+                        <p id="currentListCategory" class="list-category"></p>
+                        <p id="currentListDescription" class="list-description"></p>
+                    </div>
+                    <div class="editor-actions">
+                        <button id="editListBtn" class="btn-secondary" title="Modifier les détails de la liste">
+                            ✏️ Modifier
+                        </button>
+                        <button id="configColumnsBtn" class="btn-secondary" title="Configurer les colonnes d'impression">
+                            ⚙️ Colonnes
+                        </button>
+                        <button id="downloadCsvBtn" class="btn-secondary" title="Télécharger en CSV">
+                            📥 CSV
+                        </button>
+                        <button id="printListBtn" class="btn-primary" title="Imprimer la liste">
+                            🖨️ Imprimer
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sections Container (visible when sections mode enabled) -->
+                <div id="sectionsContainer" class="sections-container" style="display: none;">
+                    <!-- Sections will be rendered here -->
+                </div>
+
+                <!-- Flat List Container (visible when sections mode disabled) -->
+                <div id="flatListContainer" class="products-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <h3>Produits</h3>
+                            <span class="product-count" id="productsCount">0 produits</span>
+                        </div>
+                        <div class="section-actions">
+                            <button class="btn-small" id="addProductsBtn">+ Ajouter</button>
+                            <button class="btn-small" id="clearListBtn">Vider</button>
+                        </div>
+                    </div>
+                    <div class="section-content">
+                        <div class="section-search">
+                            <input type="text" id="listSearchInput" class="section-search-input" placeholder="Rechercher dans la liste...">
+                        </div>
+                        <div class="products-grid" id="productsGrid">
+                            <!-- Products will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Create/Edit List -->
+    <div id="listModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="listModalTitle">Nouvelle liste</h2>
+                <button class="modal-close" aria-label="Fermer">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="listNameInput">Nom de la liste *</label>
+                    <input type="text" id="listNameInput" class="form-input" placeholder="Ex: Produits vedettes" required>
+                </div>
+                <div class="form-group">
+                    <label for="listCategorySelect">Catégorie *</label>
+                    <select id="listCategorySelect" class="form-input" required>
+                        <option value="indica-3.5g">Indica 3,5 g</option>
+                        <option value="indica-other">Indica - Autres formats</option>
+                        <option value="sativa-3.5g">Sativa 3,5 g</option>
+                        <option value="sativa-other">Sativa - Autres formats</option>
+                        <option value="hybride-3.5g">Hybride 3,5 g</option>
+                        <option value="hybride-other">Hybride - Autres formats</option>
+                        <option value="28g">28 g</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="listDescriptionInput">Description</label>
+                    <textarea id="listDescriptionInput" class="form-input" rows="3" placeholder="Description optionnelle..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelListBtn" class="btn-secondary">Annuler</button>
+                <button id="saveListBtn" class="btn-primary">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Product Selection -->
+    <div id="productModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="productModalTitle">Ajouter des produits</h2>
+                <button class="modal-close" aria-label="Fermer">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="product-selector-controls">
+                    <input type="text" id="productSearchInput" class="form-input" placeholder="Rechercher par nom ou marque...">
+                    <div class="selection-info">
+                        <span id="selectedCount">0 produit(s) sélectionné(s)</span>
+                    </div>
+                </div>
+                <div id="productSelectionGrid" class="product-selection-grid">
+                    <!-- Products with checkboxes will be rendered here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelProductSelectionBtn" class="btn-secondary">Annuler</button>
+                <button id="addSelectedProductsBtn" class="btn-primary">Ajouter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Column Configuration -->
+    <div id="columnConfigModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Configurer les colonnes</h2>
+                <button class="modal-close" aria-label="Fermer">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="columnConfigList" class="column-config-list">
+                    <!-- Column config items will be rendered here -->
+                </div>
+                <div class="column-preview">
+                    <h3>Aperçu</h3>
+                    <div id="columnPreview" class="preview-table-container">
+                        <!-- Preview table will be rendered here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="resetColumnsBtn" class="btn-secondary">Réinitialiser</button>
+                <button id="cancelColumnConfigBtn" class="btn-secondary">Annuler</button>
+                <button id="saveColumnConfigBtn" class="btn-primary">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Section Create/Edit -->
+    <div id="sectionModal" class="modal" style="display: none;">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2 id="sectionModalTitle">Nouvelle section</h2>
+                <button class="modal-close" aria-label="Fermer">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="sectionCategorySelect">Catégorie *</label>
+                    <select id="sectionCategorySelect" class="form-input" required>
+                        <option value="">-- Sélectionner une catégorie --</option>
+                        <option value="indica-3.5g">Indica 3,5 g</option>
+                        <option value="indica-other">Indica - Autres formats</option>
+                        <option value="sativa-3.5g">Sativa 3,5 g</option>
+                        <option value="sativa-other">Sativa - Autres formats</option>
+                        <option value="hybride-3.5g">Hybride 3,5 g</option>
+                        <option value="hybride-other">Hybride - Autres formats</option>
+                        <option value="28g">28 g</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelSectionBtn" class="btn-secondary">Annuler</button>
+                <button id="saveSectionBtn" class="btn-primary">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmation Dialog -->
+    <div id="confirmModal" class="modal" style="display: none;">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2 id="confirmModalTitle">Confirmer</h2>
+            </div>
+            <div class="modal-body">
+                <p id="confirmModalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmCancelBtn" class="btn-secondary">Annuler</button>
+                <button id="confirmOkBtn" class="btn-primary btn-danger">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Print Container (hidden, for print output) -->
+    <div id="printContainer" class="print-only" style="display: none;">
+        <!-- Print HTML will be injected here -->
+    </div>
+
+    <!-- Load config first, then products data, then app -->
+    <script src="config.js"></script>
+    <script src="products-data.js"></script>
+    <script src="print-lists.js"></script>
+</body>
+</html>

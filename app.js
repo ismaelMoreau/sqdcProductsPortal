@@ -63,19 +63,22 @@ function applyProductTypeChanges() {
     });
 }
 
+// Check if a product matches current filters
+function productMatchesFilters(product) {
+    // Check type filter
+    const typeMatch = activeFilters.has('all') || activeFilters.has(product.type);
+
+    // Check search query
+    const searchMatch = !searchQuery ||
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.brand.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return typeMatch && searchMatch;
+}
+
 // Filter products based on active filters and search
 function filterProducts() {
-    filteredProducts = allProducts.filter(product => {
-        // Check type filter
-        const typeMatch = activeFilters.has('all') || activeFilters.has(product.type);
-
-        // Check search query
-        const searchMatch = !searchQuery ||
-            product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            product.brand.toLowerCase().includes(searchQuery.toLowerCase());
-
-        return typeMatch && searchMatch;
-    });
+    filteredProducts = allProducts.filter(productMatchesFilters);
 
     sortProducts();
     renderProducts();
@@ -109,7 +112,7 @@ function sortProducts() {
 }
 
 // Create product card HTML
-function createProductCard(product) {
+function createProductCard(product, isVisible = true) {
     const thcValue = product.manualThc || product.thcMax;
     const cbdValue = product.manualCbd || product.cbdMax || 0;
 
@@ -123,8 +126,11 @@ function createProductCard(product) {
     // Show CBD if it exists
     const showCbd = cbdValue > 0;
 
+    // Add hidden class if product doesn't match current filters
+    const hiddenClass = isVisible ? '' : ' card-hidden';
+
     return `
-        <div class="product-card"
+        <div class="product-card${hiddenClass}"
              data-type="${cardType}"
              data-sku="${product.sku}"
              role="button"
@@ -261,7 +267,11 @@ function renderGridSection(grid, products, emptyMessage = 'Aucun produit') {
     } else {
         // Apply custom order if available
         const orderedProducts = applyCustomOrder(products, grid.id);
-        grid.innerHTML = orderedProducts.map(product => createProductCard(product)).join('');
+        // Check visibility for each product based on current filters
+        grid.innerHTML = orderedProducts.map(product => {
+            const isVisible = productMatchesFilters(product);
+            return createProductCard(product, isVisible);
+        }).join('');
     }
 }
 
@@ -317,7 +327,8 @@ function updateAllScrollArrows(sections) {
 function renderProducts() {
     const sections = getSectionElements();
     clearAllGrids(sections);
-    const productsByType = groupProductsByTypeAndFormat(filteredProducts);
+    // Group ALL products (not just filtered ones) to keep card positions
+    const productsByType = groupProductsByTypeAndFormat(allProducts);
     renderAllSections(sections, productsByType);
     updateSectionVisibility(productsByType);
     updateAllScrollArrows(sections);

@@ -1,0 +1,1092 @@
+/* Print Lists Specific Styles - SQDC Products Portal */
+
+/* ============================================
+   Main Layout - Three Panel Design
+   ============================================ */
+
+.main-container {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: calc(100vh - 80px);
+    background-color: var(--sqdc-black);
+}
+
+/* ============================================
+   Left Sidebar - Lists Management
+   ============================================ */
+
+.lists-sidebar {
+    background-color: var(--sqdc-gray);
+    border-right: 2px solid var(--sqdc-light-gray);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    padding: 1.5rem;
+    border-bottom: 2px solid var(--sqdc-light-gray);
+}
+
+.sidebar-header h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: var(--sqdc-light-yellow);
+}
+
+.lists-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.list-item {
+    background-color: var(--sqdc-light-gray);
+    border: 2px solid transparent;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.list-item:hover {
+    border-color: var(--sqdc-yellow);
+    background-color: #333;
+}
+
+.list-item.active {
+    border-color: var(--sqdc-yellow);
+    background-color: #2a2a2a;
+}
+
+.list-item.default::before {
+    content: '★';
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    color: var(--sqdc-yellow);
+    font-size: 1rem;
+}
+
+.list-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.list-item-title {
+    font-weight: 600;
+    color: white;
+    font-size: 0.95rem;
+    flex: 1;
+    word-break: break-word;
+}
+
+.list-item-menu {
+    position: relative;
+}
+
+.list-menu-btn {
+    background: none;
+    border: none;
+    color: var(--sqdc-yellow);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.list-menu-btn:hover {
+    color: var(--sqdc-light-yellow);
+}
+
+.list-menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background-color: var(--sqdc-light-gray);
+    border: 2px solid var(--sqdc-yellow);
+    border-radius: 4px;
+    min-width: 150px;
+    z-index: 100;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.list-menu-dropdown button {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    color: white;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.list-menu-dropdown button:hover {
+    background-color: var(--sqdc-gray);
+}
+
+.list-menu-dropdown button.danger:hover {
+    background-color: #8B0000;
+}
+
+.list-item-meta {
+    font-size: 0.8rem;
+    color: #999;
+}
+
+.list-item-description {
+    font-size: 0.85rem;
+    color: #ccc;
+    margin-top: 0.25rem;
+    line-height: 1.3;
+}
+
+/* ============================================
+   Center - List Editor
+   ============================================ */
+
+.list-editor {
+    padding: 2rem;
+    overflow-y: auto;
+    background-color: var(--sqdc-black);
+}
+
+.empty-state-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+}
+
+.empty-state {
+    text-align: center;
+    color: #666;
+}
+
+.empty-state h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #999;
+}
+
+.empty-state p {
+    font-size: 1rem;
+    color: #666;
+}
+
+.list-editor-content {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--sqdc-yellow);
+}
+
+.list-title-section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    color: white;
+}
+
+.list-category {
+    font-size: 0.95rem;
+    color: var(--sqdc-yellow);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.list-description {
+    font-size: 1rem;
+    color: #999;
+    font-style: italic;
+}
+
+.editor-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+/* ============================================
+   Product Sections
+   ============================================ */
+
+.sections-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.product-section {
+    background-color: var(--sqdc-gray);
+    border: 2px solid var(--sqdc-light-gray);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.section-header {
+    background-color: var(--sqdc-light-gray);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.collapse-toggle {
+    background: none;
+    border: none;
+    color: var(--sqdc-yellow);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.product-section.collapsed .collapse-toggle {
+    transform: rotate(-90deg);
+}
+
+.section-icon {
+    font-size: 1.2rem;
+}
+
+.section-title h3 {
+    font-size: 1.1rem;
+    color: white;
+    margin: 0;
+}
+
+.product-count {
+    background-color: var(--sqdc-black);
+    color: var(--sqdc-yellow);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.section-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.section-content {
+    padding: 1rem;
+    display: block;
+}
+
+.product-section.collapsed .section-content {
+    display: none;
+}
+
+.section-search {
+    margin-bottom: 1rem;
+}
+
+.section-search-input {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--sqdc-black);
+    border: 2px solid var(--sqdc-light-gray);
+    border-radius: 4px;
+    color: white;
+    font-size: 0.95rem;
+}
+
+.section-search-input:focus {
+    outline: none;
+    border-color: var(--sqdc-yellow);
+}
+
+.products-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 100px;
+    max-height: calc(100vh - 400px);
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+/* Custom scrollbar for products grid */
+.products-grid::-webkit-scrollbar {
+    width: 8px;
+}
+
+.products-grid::-webkit-scrollbar-track {
+    background: var(--sqdc-gray);
+    border-radius: 4px;
+}
+
+.products-grid::-webkit-scrollbar-thumb {
+    background: var(--sqdc-light-gray);
+    border-radius: 4px;
+}
+
+.products-grid::-webkit-scrollbar-thumb:hover {
+    background: var(--sqdc-yellow);
+}
+
+.products-grid .empty-state {
+    padding: 2rem;
+    color: #666;
+}
+
+/* Product Cards in List Editor */
+.list-product-card {
+    background-color: var(--sqdc-black);
+    border: 2px solid var(--sqdc-light-gray);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    cursor: move;
+    transition: all 0.2s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.list-product-card:hover {
+    border-color: var(--sqdc-yellow);
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.2);
+}
+
+.list-product-card.dragging {
+    opacity: 0.5;
+}
+
+.product-card-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.product-name {
+    font-weight: 600;
+    color: white;
+    font-size: 0.95rem;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.25rem;
+}
+
+.product-info {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: #ccc;
+    white-space: nowrap;
+}
+
+.product-info span {
+    color: #ccc;
+}
+
+.product-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.remove-product-btn {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+}
+
+.remove-product-btn:hover {
+    color: #ff4444;
+}
+
+.reorder-btn {
+    background-color: var(--sqdc-light-gray);
+    border: 1px solid var(--sqdc-yellow);
+    color: var(--sqdc-yellow);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.reorder-btn:hover:not(:disabled) {
+    background-color: var(--sqdc-yellow);
+    color: var(--sqdc-black);
+}
+
+.reorder-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+.btn-primary {
+    background-color: var(--sqdc-yellow);
+    color: var(--sqdc-black);
+    border: 2px solid var(--sqdc-yellow);
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--sqdc-light-yellow);
+    border-color: var(--sqdc-light-yellow);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: white;
+    border: 2px solid var(--sqdc-light-gray);
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-secondary:hover {
+    border-color: var(--sqdc-yellow);
+    color: var(--sqdc-yellow);
+}
+
+.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+
+.btn-danger {
+    background-color: #8B0000;
+    border-color: #8B0000;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #a00000;
+    border-color: #a00000;
+}
+
+/* ============================================
+   Modals
+   ============================================ */
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: var(--sqdc-gray);
+    border: 3px solid var(--sqdc-yellow);
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-large {
+    max-width: 900px;
+}
+
+.modal-small {
+    max-width: 400px;
+}
+
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 2px solid var(--sqdc-light-gray);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    font-size: 1.3rem;
+    color: white;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--sqdc-yellow);
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+}
+
+.modal-close:hover {
+    color: var(--sqdc-light-yellow);
+}
+
+.modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 2px solid var(--sqdc-light-gray);
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--sqdc-light-yellow);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--sqdc-black);
+    border: 2px solid var(--sqdc-light-gray);
+    border-radius: 4px;
+    color: white;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--sqdc-yellow);
+}
+
+textarea.form-input {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Product Selection Modal */
+.product-selector-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+.selection-info {
+    color: var(--sqdc-yellow);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.product-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.product-checkbox-card {
+    background-color: var(--sqdc-black);
+    border: 2px solid var(--sqdc-light-gray);
+    border-radius: 6px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.product-checkbox-card:hover {
+    border-color: var(--sqdc-yellow);
+}
+
+.product-checkbox-card.selected {
+    border-color: var(--sqdc-yellow);
+    background-color: rgba(255, 215, 0, 0.1);
+}
+
+.product-checkbox-header {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.product-checkbox-header input[type="checkbox"] {
+    margin-right: 0.75rem;
+    margin-top: 0.25rem;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* Column Configuration */
+.column-config-list {
+    margin-bottom: 2rem;
+}
+
+.column-config-item {
+    background-color: var(--sqdc-black);
+    border: 2px solid var(--sqdc-light-gray);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.column-drag-handle {
+    cursor: move;
+    color: var(--sqdc-yellow);
+    font-size: 1.2rem;
+}
+
+.column-config-item.dragging {
+    opacity: 0.5;
+}
+
+.column-config-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+}
+
+.column-config-controls input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.column-config-controls label {
+    flex: 1;
+    color: white;
+    margin: 0;
+    cursor: pointer;
+}
+
+.column-width-input {
+    width: 80px;
+    padding: 0.5rem;
+    background-color: var(--sqdc-gray);
+    border: 1px solid var(--sqdc-light-gray);
+    border-radius: 4px;
+    color: white;
+    text-align: center;
+}
+
+.column-preview {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--sqdc-light-gray);
+}
+
+.column-preview h3 {
+    font-size: 1rem;
+    color: var(--sqdc-light-yellow);
+    margin-bottom: 1rem;
+}
+
+.preview-table-container {
+    overflow-x: auto;
+}
+
+.preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--sqdc-black);
+}
+
+.preview-table th,
+.preview-table td {
+    padding: 0.75rem;
+    border: 1px solid var(--sqdc-light-gray);
+    text-align: left;
+}
+
+.preview-table th {
+    background-color: var(--sqdc-light-gray);
+    color: var(--sqdc-yellow);
+    font-weight: 600;
+}
+
+.preview-table td {
+    color: white;
+}
+
+/* ============================================
+   Sections Mode Toggle
+   ============================================ */
+
+.mode-toggle-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: var(--sqdc-gray);
+    border-radius: 6px;
+    border: 2px solid var(--sqdc-light-gray);
+}
+
+/* ============================================
+   Sections Container
+   ============================================ */
+
+.sections-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.new-section-btn-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+/* ============================================
+   Section Cards
+   ============================================ */
+
+.list-section {
+    background-color: var(--sqdc-gray);
+    border: 3px solid var(--sqdc-yellow);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.list-section.dragging {
+    opacity: 0.5;
+}
+
+.list-section-header {
+    background-color: var(--sqdc-light-gray);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 2px solid var(--sqdc-yellow);
+}
+
+.list-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.list-section-title h3 {
+    font-size: 1.2rem;
+    color: var(--sqdc-yellow);
+    margin: 0;
+    font-weight: 700;
+}
+
+.list-section-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    position: relative;
+}
+
+.section-menu-btn {
+    background: none;
+    border: none;
+    color: var(--sqdc-yellow);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.section-menu-btn:hover {
+    color: var(--sqdc-light-yellow);
+}
+
+.section-menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background-color: var(--sqdc-light-gray);
+    border: 2px solid var(--sqdc-yellow);
+    border-radius: 4px;
+    min-width: 200px;
+    z-index: 100;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.section-menu-dropdown button {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    color: white;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.section-menu-dropdown button:hover {
+    background-color: var(--sqdc-gray);
+}
+
+.section-menu-dropdown button.danger:hover {
+    background-color: #8B0000;
+}
+
+.list-section-content {
+    padding: 1rem;
+    display: block;
+}
+
+.list-section.collapsed .list-section-content {
+    display: none;
+}
+
+.list-section.collapsed .collapse-toggle {
+    transform: rotate(-90deg);
+}
+
+.list-section-products {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 60px;
+}
+
+.empty-section-drop-zone {
+    padding: 2rem;
+    border: 2px dashed var(--sqdc-light-gray);
+    border-radius: 6px;
+    text-align: center;
+    color: #999;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-section-drop-zone:hover {
+    border-color: var(--sqdc-yellow);
+    background-color: rgba(255, 215, 0, 0.05);
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--sqdc-yellow);
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: inherit;
+    padding: 0;
+}
+
+.btn-link:hover {
+    color: var(--sqdc-light-yellow);
+}
+
+/* ============================================
+   Header Adjustments
+   ============================================ */
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+/* ============================================
+   Print Styles
+   ============================================ */
+
+@media print {
+    /* Hide ALL page content except print container */
+    .lists-sidebar,
+    .list-editor,
+    .list-editor-content,
+    .products-section,
+    .section-header,
+    .section-content,
+    .products-grid,
+    .list-product-card,
+    .editor-header,
+    .section-actions,
+    .section-search,
+    .remove-product-btn,
+    .product-reorder-controls,
+    .collapse-toggle,
+    header,
+    .main-container,
+    .no-print {
+        display: none !important;
+    }
+
+    /* Show ONLY print container */
+    .print-only,
+    #printContainer {
+        display: block !important;
+    }
+
+    /* Reset page layout */
+    body {
+        background: white;
+        color: black;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Print-specific styling */
+    #printContainer {
+        padding: 0;
+        margin: 0;
+    }
+
+    .print-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+        table-layout: fixed;
+    }
+
+    .print-table th,
+    .print-table td {
+        border: 1px solid black;
+        padding: 4px 6px;
+        text-align: left;
+        font-size: 9pt;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .print-table th {
+        background-color: #f0f0f0;
+        font-weight: bold;
+    }
+
+    /* Page setup - minimal margins to fit on one page and hide headers/footers */
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+
+    /* Add small padding to table to prevent edge clipping */
+    .print-table {
+        margin: 3mm;
+    }
+
+    /* Section-specific print styles */
+    .print-section {
+        margin-bottom: 2rem;
+        page-break-inside: avoid;
+    }
+
+    .print-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .print-section-title {
+        font-size: 14pt;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        padding: 4px 0;
+        border-bottom: 2px solid black;
+        page-break-after: avoid;
+    }
+
+    .print-section .print-table {
+        margin-top: 0;
+        margin-bottom: 1rem;
+    }
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 1024px) {
+    .main-container {
+        grid-template-columns: 250px 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        grid-template-columns: 1fr;
+    }
+
+    .lists-sidebar {
+        border-right: none;
+        border-bottom: 2px solid var(--sqdc-light-gray);
+        max-height: 300px;
+    }
+
+    .editor-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .editor-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .product-selection-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+}
