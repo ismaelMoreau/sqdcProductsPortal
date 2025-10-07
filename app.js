@@ -16,16 +16,20 @@ let dragState = {
 // Files index is loaded from files-index-data.js (embedded to avoid CORS issues)
 // window.FILES_INDEX is available globally
 
+// Helper function for localStorage error handling
+function handleStorageError(error, context = '') {
+    console.error(`Error saving to localStorage${context ? ' (' + context + ')' : ''}:`, error);
+    if (error.name === 'QuotaExceededError') {
+        console.warn('LocalStorage quota exceeded. Consider clearing old data.');
+        showValidationError('Erreur: Espace de stockage insuffisant');
+    }
+}
+
 // Load products
 async function loadProducts() {
-    // Static UI mode - load from embedded data only
-    // Web server fetch commented out for static file usage
-    /*
-    try {
-        // Try to fetch from JSON file first (if using web server)
-        const response = await fetch('products.json');
-        if (!response.ok) throw new Error('Failed to fetch');
-        allProducts = await response.json();
+    // Load from embedded data (products-data.js)
+    if (window.PRODUCTS_DATA && window.PRODUCTS_DATA.length > 0) {
+        allProducts = window.PRODUCTS_DATA;
         applyProductTypeChanges();
         loadProductFormatChanges();
         loadThcChanges();
@@ -33,25 +37,9 @@ async function loadProducts() {
         filteredProducts = [...allProducts];
         renderProducts();
         updateCounts();
-    } catch (error) {
-        console.error('Error loading products from file, trying embedded data:', error);
-    */
-        // Load from embedded data (products-data.js)
-        if (window.PRODUCTS_DATA && window.PRODUCTS_DATA.length > 0) {
-            allProducts = window.PRODUCTS_DATA;
-            applyProductTypeChanges();
-            loadProductFormatChanges();
-            loadThcChanges();
-            loadCbdChanges();
-            filteredProducts = [...allProducts];
-            renderProducts();
-            updateCounts();
-        } else {
-            document.querySelector('main').innerHTML = '<div class="empty-state">Erreur lors du chargement des produits</div>';
-        }
-    /*
+    } else {
+        document.querySelector('main').innerHTML = '<div class="empty-state">Erreur lors du chargement des produits</div>';
     }
-    */
 }
 
 function applyProductTypeChanges() {
@@ -644,11 +632,7 @@ function saveThcChanges() {
         });
         localStorage.setItem(CONFIG.STORAGE_KEYS.THC_CHANGES, JSON.stringify(thcChanges));
     } catch (error) {
-        console.error('Error saving THC changes:', error);
-        if (error.name === 'QuotaExceededError') {
-            console.warn('LocalStorage quota exceeded. Consider clearing old data.');
-            showValidationError('Erreur: Espace de stockage insuffisant');
-        }
+        handleStorageError(error, 'THC changes');
     }
 }
 
@@ -678,11 +662,7 @@ function saveCbdChanges() {
         });
         localStorage.setItem(CONFIG.STORAGE_KEYS.CBD_CHANGES, JSON.stringify(cbdChanges));
     } catch (error) {
-        console.error('Error saving CBD changes:', error);
-        if (error.name === 'QuotaExceededError') {
-            console.warn('LocalStorage quota exceeded. Consider clearing old data.');
-            showValidationError('Erreur: Espace de stockage insuffisant');
-        }
+        handleStorageError(error, 'CBD changes');
     }
 }
 
@@ -707,10 +687,7 @@ function saveProductTypeChange(sku, newType) {
         productTypeChanges[sku] = newType;
         localStorage.setItem(CONFIG.STORAGE_KEYS.TYPE_CHANGES, JSON.stringify(productTypeChanges));
     } catch (error) {
-        console.error('Error saving product type change:', error);
-        if (error.name === 'QuotaExceededError') {
-            console.warn('LocalStorage quota exceeded. Consider clearing old data.');
-        }
+        handleStorageError(error, 'product type change');
     }
 }
 
@@ -737,10 +714,7 @@ function saveProductFormatChange(sku, newFormat) {
         formatChanges[sku] = newFormat;
         localStorage.setItem(CONFIG.STORAGE_KEYS.FORMAT_CHANGES, JSON.stringify(formatChanges));
     } catch (error) {
-        console.error('Error saving format change:', error);
-        if (error.name === 'QuotaExceededError') {
-            console.warn('LocalStorage quota exceeded. Consider clearing old data.');
-        }
+        handleStorageError(error, 'format change');
     }
 }
 
@@ -765,10 +739,7 @@ function saveProductOrder() {
     try {
         localStorage.setItem(CONFIG.STORAGE_KEYS.PRODUCT_ORDER, JSON.stringify(productOrder));
     } catch (error) {
-        console.error('Error saving product order:', error);
-        if (error.name === 'QuotaExceededError') {
-            console.warn('LocalStorage quota exceeded. Consider clearing old data.');
-        }
+        handleStorageError(error, 'product order');
     }
 }
 
@@ -982,66 +953,6 @@ function hideTooltip() {
     tooltip.classList.remove('active');
 }
 
-// Image viewer functions - returns array of possible file paths to try (URL encoded)
-function getProductImagePath(product) {
-    // Map product to correct folder based on type and format
-    let folder = '';
-
-    if (product.format === CONFIG.FORMATS.LARGE) {
-        // 28g products
-        folder = 'dried_flower_15_28g';
-    } else if (product.format === CONFIG.FORMATS.SMALL) {
-        // 3.5g products
-        if (product.type === CONFIG.TYPES.INDICA) {
-            folder = 'dried_flower_indica_35g';
-        } else if (product.type === CONFIG.TYPES.SATIVA) {
-            folder = 'dried_flower_sativa_35g';
-        } else if (product.type === CONFIG.TYPES.HYBRIDE) {
-            folder = 'dried_flower_hybrid_35g';
-        }
-    } else {
-        // Other formats (7g, etc.)
-        if (product.type === CONFIG.TYPES.INDICA) {
-            folder = 'dried_flower_indica_35g'; // Fallback to 3.5g folder
-        } else if (product.type === CONFIG.TYPES.SATIVA) {
-            folder = 'dried_flower_sativa_35g';
-        } else if (product.type === CONFIG.TYPES.HYBRIDE) {
-            folder = 'dried_flower_hybrid_35g';
-        }
-    }
-
-    // Helper function to normalize filename to match renamed files
-    function normalizeName(name) {
-        return name.toLowerCase()
-            .replace(/ - /g, '_')
-            .replace(/-/g, '_')
-            .replace(/ /g, '_')
-            .replace(/'/g, '')
-            .replace(/#/g, '')
-            .replace(/\//g, '_')
-            .replace(/[()]/g, '')
-            .replace(/,/g, '')
-            .replace(/_+/g, '_')
-            .replace(/^_|_$/g, '');
-    }
-
-    // Build array of possible paths to try
-    // Try name-only FIRST (more likely to match since SKUs often don't match)
-    // Prioritize images over PDFs (better error detection)
-    const normalizedName = normalizeName(product.name);
-    const possiblePaths = [
-        `fiche_produits/${folder}/${normalizedName}.png`,
-        `fiche_produits/${folder}/${normalizedName}.jpg`,
-        `fiche_produits/${folder}/${normalizedName}.jpeg`,
-        `fiche_produits/${folder}/${normalizedName}.pdf`,
-        `fiche_produits/${folder}/${normalizedName}_${product.sku}.png`,
-        `fiche_produits/${folder}/${normalizedName}_${product.sku}.jpg`,
-        `fiche_produits/${folder}/${normalizedName}_${product.sku}.jpeg`,
-        `fiche_produits/${folder}/${normalizedName}_${product.sku}.pdf`
-    ];
-
-    return possiblePaths;
-}
 
 // Fuzzy search: find files that match any word from product name
 function findMatchingFilesInIndex(product, folder) {
@@ -1315,13 +1226,6 @@ function setupEventListeners() {
         searchQuery = e.target.value;
         filterProducts();
     });
-
-    // Sort select - removed from UI
-    // const sortSelect = document.getElementById('sortSelect');
-    // sortSelect.addEventListener('change', (e) => {
-    //     sortBy = e.target.value;
-    //     filterProducts();
-    // });
 
     // Event delegation for product cards (click and hover)
     document.addEventListener('click', (e) => {

@@ -2140,31 +2140,6 @@ function handleClearList() {
     );
 }
 
-/**
- * Add all available products to the list
- */
-function handleAddAllProducts() {
-    if (!currentListId) return;
-
-    const availableProducts = getAvailableProductsForList(currentListId);
-
-    if (availableProducts.length === 0) {
-        alert('Aucun produit disponible à ajouter');
-        return;
-    }
-
-    showConfirmDialog(
-        'Ajouter tous les produits',
-        `Ajouter ${availableProducts.length} produit(s) à cette liste ?`,
-        () => {
-            availableProducts.forEach(product => {
-                addProductToList(currentListId, product.sku);
-            });
-
-            renderListProducts();
-        }
-    );
-}
 
 // ============================================
 // List Search
@@ -2613,14 +2588,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (clearListBtn) {
         clearListBtn.addEventListener('click', () => {
             handleClearList();
-        });
-    }
-
-    // Add all products button
-    const addAllProductsBtn = document.getElementById('addAllProductsBtn');
-    if (addAllProductsBtn) {
-        addAllProductsBtn.addEventListener('click', () => {
-            handleAddAllProducts();
         });
     }
 
