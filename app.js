@@ -47,6 +47,10 @@ function applyProductTypeChanges() {
     allProducts.forEach(product => {
         if (productTypeChanges[product.sku]) {
             product.type = productTypeChanges[product.sku];
+        } else if (product.format === CONFIG.FORMATS.LARGE && product.type !== CONFIG.TYPES.OZ28) {
+            // Migration: Legacy 28g products without explicit type change
+            // If format is 28g but type is not "28g", set it to "28g" for backwards compatibility
+            product.type = CONFIG.TYPES.OZ28;
         }
     });
 }
@@ -104,8 +108,8 @@ function createProductCard(product, isVisible = true) {
     const thcValue = product.manualThc || product.thcMax;
     const cbdValue = product.manualCbd || product.cbdMax || 0;
 
-    // Determine card type for styling - 28g products get special type
-    const cardType = product.format === CONFIG.FORMATS.LARGE ? CONFIG.TYPES.OZ28 : product.type;
+    // Use product type directly for card styling
+    const cardType = product.type;
 
     // Show format for non-3.5g products
     const showFormat = product.format !== CONFIG.FORMATS.SMALL;
@@ -230,14 +234,15 @@ function groupProductsByTypeAndFormat(products) {
     };
 
     products.forEach(product => {
-        // Check if it's a 28g product
-        if (product.format === CONFIG.FORMATS.LARGE) {
+        // Check type first (not format) - section 28g has type "28g"
+        if (product.type === CONFIG.TYPES.OZ28) {
             productsByType[CONFIG.TYPES.OZ28]['all'].push(product);
         } else if (productsByType[product.type]) {
             // Check if format is "3,5 g"
             if (product.format === CONFIG.FORMATS.SMALL) {
                 productsByType[product.type]['3.5g'].push(product);
             } else {
+                // Other formats (7g, 28g, préroulés, etc.)
                 productsByType[product.type]['other'].push(product);
             }
         }
@@ -344,13 +349,13 @@ function updateCounts() {
     };
 
     filteredProducts.forEach(product => {
-        // Count 28g products separately
-        if (product.format === CONFIG.FORMATS.LARGE) {
-            counts[CONFIG.TYPES.OZ28]++;
-        } else if (counts[product.type] !== undefined) {
+        // Count products by type
+        if (counts[product.type] !== undefined) {
             counts[product.type]++;
+        }
 
-            // Count subsections for 3.5g vs other formats
+        // Count subsections for 3.5g vs other formats (only for Indica/Sativa/Hybride)
+        if (product.type !== CONFIG.TYPES.OZ28) {
             const is35g = product.format === CONFIG.FORMATS.SMALL;
             if (product.type === CONFIG.TYPES.INDICA) {
                 if (is35g) subsectionCounts.indica35g++;
@@ -399,9 +404,8 @@ function openEditModalBySku(sku) {
     // Set modal content
     modalProductName.textContent = product.name;
 
-    // Determine current section
-    const currentSection = product.format === CONFIG.FORMATS.LARGE ? CONFIG.TYPES.OZ28 : product.type;
-    modalSectionSelect.value = currentSection;
+    // Set current section from product type
+    modalSectionSelect.value = product.type;
 
     // Set current format
     const currentFormat = product.manualFormat || product.format;
@@ -539,7 +543,11 @@ function findProductBySku(sku) {
 // Helper: Update product section and format
 function updateProductSection(product, newSection, newFormat) {
     if (newSection === CONFIG.TYPES.OZ28) {
-        // Moving to 28g section
+        // Moving to 28g section - set both type AND format to 28g
+        if (product.type !== CONFIG.TYPES.OZ28) {
+            product.type = CONFIG.TYPES.OZ28;
+            saveProductTypeChange(product.sku, CONFIG.TYPES.OZ28);
+        }
         if (product.format !== CONFIG.FORMATS.LARGE) {
             product.format = CONFIG.FORMATS.LARGE;
             saveProductFormatChange(product.sku, CONFIG.FORMATS.LARGE);
