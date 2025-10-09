@@ -5,6 +5,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# GitHub
+.github/
+
 # IDE and Editor files
 .vscode/
 .idea/
