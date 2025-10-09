@@ -251,20 +251,593 @@ function groupProductsByTypeAndFormat(products) {
     return productsByType;
 }
 
-// Helper function: Render a single grid with products
+// Configuration for drawer system
+const DRAWER_CONFIG = {
+    productsPerDrawer: 2,
+    drawersPerColumn: 3,
+    // Configuration par section (au lieu d'un seul maxDrawers global)
+    maxDrawersBySection: {
+        indica: 12,
+        sativa: 12,
+        hybride: 12
+    }
+};
+
+// Configuration for door system (for 3.5g and 28g sections)
+const DOOR_CONFIG = {
+    productsPerDoor: 4,
+    // Configuration par section
+    maxDoorsBySection: {
+        indica: 12,
+        sativa: 12,
+        hybride: 12,
+        oz28: 12
+    }
+};
+
+// Setup drawer count controls (one per section)
+function setupDrawerCountControls() {
+    const controls = {
+        indica: document.getElementById('drawerCountIndica'),
+        sativa: document.getElementById('drawerCountSativa'),
+        hybride: document.getElementById('drawerCountHybride')
+    };
+    
+    // Charger les valeurs sauvegardées
+    loadDrawerCounts();
+    
+    // Appliquer les valeurs aux inputs
+    Object.keys(controls).forEach(section => {
+        if (controls[section]) {
+            controls[section].value = DRAWER_CONFIG.maxDrawersBySection[section];
+        }
+    });
+    
+    // Ajouter les event listeners
+    Object.keys(controls).forEach(section => {
+        const input = controls[section];
+        if (!input) return;
+        
+        input.addEventListener('change', (e) => {
+            const newCount = parseInt(e.target.value);
+            if (newCount >= 1 && newCount <= 30) {
+                DRAWER_CONFIG.maxDrawersBySection[section] = newCount;
+                saveDrawerCounts();
+                // Re-render all sections
+                renderProducts();
+            }
+        });
+    });
+}
+
+// Setup door count controls (one per section)
+function setupDoorCountControls() {
+    const controls = {
+        indica: document.getElementById('doorCountIndica'),
+        sativa: document.getElementById('doorCountSativa'),
+        hybride: document.getElementById('doorCountHybride'),
+        oz28: document.getElementById('doorCountOz28')
+    };
+    
+    // Charger les valeurs sauvegardées
+    loadDoorCounts();
+    
+    // Appliquer les valeurs aux inputs
+    Object.keys(controls).forEach(section => {
+        if (controls[section]) {
+            controls[section].value = DOOR_CONFIG.maxDoorsBySection[section];
+        }
+    });
+    
+    // Ajouter les event listeners
+    Object.keys(controls).forEach(section => {
+        const input = controls[section];
+        if (!input) return;
+        
+        input.addEventListener('change', (e) => {
+            const newCount = parseInt(e.target.value);
+            if (newCount >= 1 && newCount <= 30) {
+                DOOR_CONFIG.maxDoorsBySection[section] = newCount;
+                saveDoorCounts();
+                // Re-render all sections
+                renderProducts();
+            }
+        });
+    });
+}
+
+// Save drawer counts to localStorage
+function saveDrawerCounts() {
+    try {
+        localStorage.setItem(
+            CONFIG.STORAGE_KEYS.DRAWER_COUNT,
+            JSON.stringify(DRAWER_CONFIG.maxDrawersBySection)
+        );
+    } catch (error) {
+        handleStorageError(error, 'drawer counts');
+    }
+}
+
+// Load drawer counts from localStorage
+function loadDrawerCounts() {
+    try {
+        const saved = localStorage.getItem(CONFIG.STORAGE_KEYS.DRAWER_COUNT);
+        if (saved) {
+            const counts = JSON.parse(saved);
+            DRAWER_CONFIG.maxDrawersBySection = {
+                ...DRAWER_CONFIG.maxDrawersBySection,
+                ...counts
+            };
+        }
+    } catch (error) {
+        console.error('Error loading drawer counts:', error);
+    }
+}
+
+// Save door counts to localStorage
+function saveDoorCounts() {
+    try {
+        localStorage.setItem(
+            CONFIG.STORAGE_KEYS.DOOR_COUNT,
+            JSON.stringify(DOOR_CONFIG.maxDoorsBySection)
+        );
+    } catch (error) {
+        handleStorageError(error, 'door counts');
+    }
+}
+
+// Load door counts from localStorage
+function loadDoorCounts() {
+    try {
+        const saved = localStorage.getItem(CONFIG.STORAGE_KEYS.DOOR_COUNT);
+        if (saved) {
+            const counts = JSON.parse(saved);
+            DOOR_CONFIG.maxDoorsBySection = {
+                ...DOOR_CONFIG.maxDoorsBySection,
+                ...counts
+            };
+        }
+    } catch (error) {
+        console.error('Error loading door counts:', error);
+    }
+}
+
+// Helper function to get section name from grid ID
+function getSectionFromGridId(gridId) {
+    if (gridId.includes('indica')) return 'indica';
+    if (gridId.includes('sativa')) return 'sativa';
+    if (gridId.includes('hybride')) return 'hybride';
+    if (gridId.includes('oz28')) return 'oz28';
+    return 'indica'; // fallback
+}
+
+// Helper function: Create a standalone card (label without drawer)
+function createStandaloneCard(product) {
+    const thcValue = product.manualThc || product.thcMax;
+    const cbdValue = product.manualCbd || product.cbd || 0;
+    const showCbd = cbdValue > 0;
+    
+    // Check if product matches current filters
+    const isVisible = productMatchesFilters(product);
+    
+    const card = document.createElement('div');
+    card.className = isVisible ? 'drawer-product-card standalone' : 'drawer-product-card standalone card-hidden';
+    card.dataset.type = product.type;
+    card.dataset.sku = product.sku;
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('draggable', 'true'); // Now draggable for reordering
+    card.setAttribute('aria-label', `${product.name}, ${thcValue}% THC, cliquez pour modifier`);
+    
+    card.innerHTML = `
+        <div class="drawer-product-name">${product.name}</div>
+        <div class="drawer-product-thc">
+            <div class="drawer-thc-value">${thcValue}%</div>
+        </div>
+        ${showCbd ? `<div class="drawer-product-cbd">${cbdValue}%</div>` : ''}
+    `;
+    
+    // Drag handlers for reordering
+    card.addEventListener('dragstart', handleDragStart);
+    card.addEventListener('dragover', handleDragOver);
+    card.addEventListener('drop', handleDrop);
+    card.addEventListener('dragend', handleDragEnd);
+    
+    // Click handler to open modal
+    card.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEditModalBySku(product.sku);
+    });
+    
+    // Keyboard accessibility
+    card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            openEditModalBySku(product.sku);
+        }
+    });
+    
+    return card;
+}
+
+// Helper function: Create a door product card (for doors)
+function createDoorProductCard(product) {
+    const thcValue = product.manualThc || product.thcMax;
+    const cbdValue = product.manualCbd || product.cbd || 0;
+    const showCbd = cbdValue > 0;
+    
+    // Check if product matches current filters
+    const isVisible = productMatchesFilters(product);
+    
+    const card = document.createElement('div');
+    card.className = isVisible ? 'door-product-card' : 'door-product-card card-hidden';
+    card.dataset.type = product.type;
+    card.dataset.sku = product.sku;
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('draggable', 'true'); // Now draggable for reordering
+    card.setAttribute('aria-label', `${product.name}, ${thcValue}% THC, cliquez pour modifier`);
+    
+    card.innerHTML = `
+        <div class="door-product-name">${product.name}</div>
+        <div class="door-product-thc">
+            <div class="door-thc-value">${thcValue}%</div>
+        </div>
+        ${showCbd ? `<div class="door-product-cbd">${cbdValue}%</div>` : ''}
+    `;
+    
+    // Drag handlers for reordering
+    card.addEventListener('dragstart', handleDragStart);
+    card.addEventListener('dragover', handleDragOver);
+    card.addEventListener('drop', handleDrop);
+    card.addEventListener('dragend', handleDragEnd);
+    
+    // Click handler to open modal
+    card.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEditModalBySku(product.sku);
+    });
+    
+    // Keyboard accessibility
+    card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            openEditModalBySku(product.sku);
+        }
+    });
+    
+    return card;
+}
+
+// Helper function: Create a standalone door card (label without door)
+function createStandaloneDoorCard(product) {
+    const thcValue = product.manualThc || product.thcMax;
+    const cbdValue = product.manualCbd || product.cbd || 0;
+    const showCbd = cbdValue > 0;
+    
+    // Check if product matches current filters
+    const isVisible = productMatchesFilters(product);
+    
+    const card = document.createElement('div');
+    card.className = isVisible ? 'door-product-card standalone' : 'door-product-card standalone card-hidden';
+    card.dataset.type = product.type;
+    card.dataset.sku = product.sku;
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('draggable', 'true'); // Now draggable for reordering
+    card.setAttribute('aria-label', `${product.name}, ${thcValue}% THC, cliquez pour modifier`);
+    
+    card.innerHTML = `
+        <div class="door-product-name">${product.name}</div>
+        <div class="door-product-thc">
+            <div class="door-thc-value">${thcValue}%</div>
+        </div>
+        ${showCbd ? `<div class="door-product-cbd">${cbdValue}%</div>` : ''}
+    `;
+    
+    // Drag handlers for reordering
+    card.addEventListener('dragstart', handleDragStart);
+    card.addEventListener('dragover', handleDragOver);
+    card.addEventListener('drop', handleDrop);
+    card.addEventListener('dragend', handleDragEnd);
+    
+    // Click handler to open modal
+    card.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEditModalBySku(product.sku);
+    });
+    
+    // Keyboard accessibility
+    card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            openEditModalBySku(product.sku);
+        }
+    });
+    
+    return card;
+}
+
+// Helper function: Create a door element with products (supports empty doors)
+function createDoor(products, doorIndex) {
+    const door = document.createElement('div');
+    door.className = 'door';
+    door.dataset.doorIndex = doorIndex;
+    
+    // Add empty class if no products
+    if (!products || products.length === 0) {
+        door.classList.add('empty');
+    }
+    
+    // Create door handle
+    const handle = document.createElement('div');
+    handle.className = 'door-handle';
+    
+    // Create labels container (shown when closed) - 4 cards stacked vertically
+    const labelsContainer = document.createElement('div');
+    labelsContainer.className = 'door-labels';
+    
+    // Create stock display container (shown when open)
+    const stockDisplay = document.createElement('div');
+    stockDisplay.className = 'door-stock-display';
+    
+    // Add empty state message if no products
+    if (!products || products.length === 0) {
+        const emptyLabel = document.createElement('div');
+        emptyLabel.className = 'door-empty-label';
+        emptyLabel.textContent = 'Vide';
+        labelsContainer.appendChild(emptyLabel);
+        door.appendChild(labelsContainer);
+        door.appendChild(stockDisplay);
+        door.appendChild(handle);
+        return door;
+    }
+    
+    // Add product labels (square cards with THC% and CBD) and stock info
+    products.forEach(product => {
+        // Create card for labels container
+        const card = createDoorProductCard(product);
+        labelsContainer.appendChild(card);
+        
+        // Add stock info for open state
+        const stockItem = document.createElement('div');
+        stockItem.className = 'door-stock-item';
+        
+        const stockName = document.createElement('div');
+        stockName.className = 'door-stock-name';
+        stockName.textContent = product.name;
+        
+        const stockCount = document.createElement('div');
+        stockCount.className = 'door-stock-count';
+        stockCount.textContent = '0'; // Stock count set to 0 for now
+        stockCount.dataset.sku = product.sku;
+        
+        stockItem.appendChild(stockName);
+        stockItem.appendChild(stockCount);
+        stockDisplay.appendChild(stockItem);
+    });
+    
+    door.appendChild(labelsContainer);
+    door.appendChild(stockDisplay);
+    door.appendChild(handle);
+    
+    // Mark door as not draggable
+    door.setAttribute('draggable', 'false');
+    
+    // Toggle door on click (exactly like drawers)
+    door.addEventListener('click', (e) => {
+        door.classList.toggle('open');
+    });
+    
+    return door;
+}
+
+// Helper function: Create a drawer element with products (supports empty drawers)
+function createDrawer(products, drawerIndex) {
+    const drawer = document.createElement('div');
+    drawer.className = 'drawer';
+    drawer.dataset.drawerIndex = drawerIndex;
+    
+    // Add empty class if no products
+    if (!products || products.length === 0) {
+        drawer.classList.add('empty');
+    }
+    
+    // Create drawer handle
+    const handle = document.createElement('div');
+    handle.className = 'drawer-handle';
+    
+    // Create labels container (shown when closed) - square cards side by side
+    const labelsContainer = document.createElement('div');
+    labelsContainer.className = 'drawer-labels';
+    
+    // Create stock display container (shown when open)
+    const stockDisplay = document.createElement('div');
+    stockDisplay.className = 'drawer-stock-display';
+    
+    // Add empty state message if no products
+    if (!products || products.length === 0) {
+        const emptyLabel = document.createElement('div');
+        emptyLabel.className = 'drawer-empty-label';
+        emptyLabel.textContent = 'Vide';
+        labelsContainer.appendChild(emptyLabel);
+        return drawer.appendChild(labelsContainer), drawer.appendChild(stockDisplay), drawer.appendChild(handle), drawer;
+    }
+    
+    // Add product labels (square cards with THC% and CBD) and stock info
+    products.forEach(product => {
+        // Get THC value
+        const thcValue = product.manualThc || product.thcMax;
+        // Get CBD value
+        const cbdValue = product.manualCbd || product.cbd || 0;
+        const showCbd = cbdValue > 0;
+        
+        // Check if product matches current filters
+        const isVisible = productMatchesFilters(product);
+        
+        // Create square card label (clickable to open modal)
+        const card = document.createElement('div');
+        card.className = isVisible ? 'drawer-product-card' : 'drawer-product-card card-hidden';
+        card.dataset.type = product.type;
+        card.dataset.sku = product.sku;
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('draggable', 'true'); // Now draggable for reordering
+        card.setAttribute('aria-label', `${product.name}, ${thcValue}% THC, cliquez pour modifier`);
+        
+        card.innerHTML = `
+            <div class="drawer-product-name">${product.name}</div>
+            <div class="drawer-product-thc">
+                <div class="drawer-thc-value">${thcValue}%</div>
+            </div>
+            ${showCbd ? `<div class="drawer-product-cbd">${cbdValue}%</div>` : ''}
+        `;
+        
+        // Drag handlers for reordering
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragover', handleDragOver);
+        card.addEventListener('drop', handleDrop);
+        card.addEventListener('dragend', handleDragEnd);
+        
+        // Click handler to open modal
+        card.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openEditModalBySku(product.sku);
+        });
+        
+        // Keyboard accessibility
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                openEditModalBySku(product.sku);
+            }
+        });
+        
+        labelsContainer.appendChild(card);
+        
+        // Add stock info for open state
+        const stockItem = document.createElement('div');
+        stockItem.className = 'drawer-stock-item';
+        
+        const stockName = document.createElement('div');
+        stockName.className = 'drawer-stock-name';
+        stockName.textContent = product.name;
+        
+        const stockCount = document.createElement('div');
+        stockCount.className = 'drawer-stock-count';
+        stockCount.textContent = '0'; // Stock count set to 0 for now
+        stockCount.dataset.sku = product.sku;
+        
+        stockItem.appendChild(stockName);
+        stockItem.appendChild(stockCount);
+        stockDisplay.appendChild(stockItem);
+    });
+    
+    drawer.appendChild(labelsContainer);
+    drawer.appendChild(stockDisplay);
+    drawer.appendChild(handle);
+    
+    // Mark drawer as not draggable
+    drawer.setAttribute('draggable', 'false');
+    
+    // Toggle drawer on click
+    drawer.addEventListener('click', (e) => {
+        drawer.classList.toggle('open');
+    });
+    
+    return drawer;
+}
+
+// Helper function: Render a single grid with products (with drawer and door support)
 function renderGridSection(grid, products, emptyMessage = 'Aucun produit') {
     if (!grid) return;
 
     if (products.length === 0) {
         grid.innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
     } else {
-        // Apply custom order if available
-        const orderedProducts = applyCustomOrder(products, grid.id);
-        // Check visibility for each product based on current filters
-        grid.innerHTML = orderedProducts.map(product => {
-            const isVisible = productMatchesFilters(product);
-            return createProductCard(product, isVisible);
-        }).join('');
+        // Check if this is a door grid (3.5g sections or 28g)
+        const isDoorGrid = grid.id.includes('-3.5g') || grid.id === 'oz28-grid';
+        
+        // Check if this is an "other formats" grid that should have drawers
+        const isDrawerGrid = grid.id.includes('-other');
+        
+        if (isDoorGrid) {
+            // Use door system for 3.5g and 28g sections
+            renderDoorsGrid(grid, products);
+        } else if (isDrawerGrid) {
+            // Use drawer system for "other formats"
+            // Clear the grid
+            grid.innerHTML = '';
+            
+            // Apply custom order if available
+            const orderedProducts = applyCustomOrder(products, grid.id);
+            
+            // Déterminer quelle section et utiliser son maxDrawers
+            const section = getSectionFromGridId(grid.id);
+            const maxDrawers = DRAWER_CONFIG.maxDrawersBySection[section] || 12;
+            
+            // Create all drawers (including empty ones if needed)
+            for (let i = 0; i < maxDrawers; i++) {
+                const startIndex = i * DRAWER_CONFIG.productsPerDrawer;
+                const drawerProds = orderedProducts.slice(startIndex, startIndex + DRAWER_CONFIG.productsPerDrawer);
+                const drawer = createDrawer(drawerProds, i);
+                grid.appendChild(drawer);
+            }
+            
+            // Add remaining products as standalone labels (cards without drawers)
+            const remainingStartIndex = maxDrawers * DRAWER_CONFIG.productsPerDrawer;
+            if (remainingStartIndex < orderedProducts.length) {
+                const remainingProducts = orderedProducts.slice(remainingStartIndex);
+                remainingProducts.forEach(product => {
+                    const card = createStandaloneCard(product);
+                    grid.appendChild(card);
+                });
+            }
+        } else {
+            // Regular grid rendering (no drawers, no doors)
+            // Apply custom order if available
+            const orderedProducts = applyCustomOrder(products, grid.id);
+            // Check visibility for each product based on current filters
+            grid.innerHTML = orderedProducts.map(product => {
+                const isVisible = productMatchesFilters(product);
+                return createProductCard(product, isVisible);
+            }).join('');
+        }
+    }
+}
+
+// Helper function: Render doors grid (for 3.5g and 28g sections)
+function renderDoorsGrid(grid, products) {
+    // Clear the grid
+    grid.innerHTML = '';
+    
+    // Apply custom order if available
+    const orderedProducts = applyCustomOrder(products, grid.id);
+    
+    // Déterminer quelle section et utiliser son maxDoors
+    const section = getSectionFromGridId(grid.id);
+    const maxDoors = DOOR_CONFIG.maxDoorsBySection[section] || 12;
+    
+    // Create all doors (including empty ones if needed)
+    for (let i = 0; i < maxDoors; i++) {
+        const startIndex = i * DOOR_CONFIG.productsPerDoor;
+        const doorProds = orderedProducts.slice(startIndex, startIndex + DOOR_CONFIG.productsPerDoor);
+        const door = createDoor(doorProds, i);
+        grid.appendChild(door);
+    }
+    
+    // Add remaining products as standalone labels (cards without doors)
+    const remainingStartIndex = maxDoors * DOOR_CONFIG.productsPerDoor;
+    if (remainingStartIndex < orderedProducts.length) {
+        const remainingProducts = orderedProducts.slice(remainingStartIndex);
+        remainingProducts.forEach(product => {
+            const card = createStandaloneDoorCard(product);
+            grid.appendChild(card);
+        });
     }
 }
 
@@ -806,7 +1379,8 @@ function swapElements(elem1, elem2) {
 }
 
 function handleDragStart(e) {
-    const card = e.target.closest('.product-card');
+    // Support all card types: regular, door, and drawer cards
+    const card = e.target.closest('.product-card, .door-product-card, .drawer-product-card');
     if (!card) return;
 
     const grid = card.closest('.products-grid');
@@ -841,7 +1415,8 @@ function handleDragEnd() {
         if (dragState.sourceGridId) {
             const grid = document.getElementById(dragState.sourceGridId);
             if (grid) {
-                const cards = Array.from(grid.querySelectorAll('.product-card'));
+                // Query all card types
+                const cards = Array.from(grid.querySelectorAll('.product-card, .door-product-card, .drawer-product-card'));
                 const newOrder = cards.map(c => c.dataset.sku);
                 productOrder[dragState.sourceGridId] = newOrder;
                 saveProductOrder();
@@ -849,8 +1424,8 @@ function handleDragEnd() {
         }
     }
 
-    // Remove all visual feedback
-    document.querySelectorAll('.product-card').forEach(c => c.classList.remove('drag-over'));
+    // Remove all visual feedback from all card types
+    document.querySelectorAll('.product-card, .door-product-card, .drawer-product-card').forEach(c => c.classList.remove('drag-over'));
     document.querySelectorAll('.products-grid').forEach(g => g.classList.remove('drag-active'));
 
     // Reset drag state
@@ -865,7 +1440,7 @@ function handleDragOver(e) {
 
     if (!dragState.draggedElement) return;
 
-    const card = e.target.closest('.product-card');
+    const card = e.target.closest('.product-card, .door-product-card, .drawer-product-card');
     const grid = e.target.closest('.products-grid');
 
     if (!grid || !dragState.sourceGridId) return;
@@ -885,15 +1460,23 @@ function handleDragOver(e) {
     }
 }
 
+function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // The swap will be handled in handleDragEnd
+    return false;
+}
+
 function handleDragEnter(e) {
-    const card = e.target.closest('.product-card');
+    const card = e.target.closest('.product-card, .door-product-card, .drawer-product-card');
     if (card && card !== dragState.draggedElement) {
         card.classList.add('drag-over');
     }
 }
 
 function handleDragLeave(e) {
-    const card = e.target.closest('.product-card');
+    const card = e.target.closest('.product-card, .door-product-card, .drawer-product-card');
     if (card) {
         card.classList.remove('drag-over');
     }
@@ -1296,7 +1879,11 @@ function setupEventListeners() {
 document.addEventListener('DOMContentLoaded', () => {
     loadProductTypeChanges();
     loadProductOrder();
+    loadDrawerCounts();
+    loadDoorCounts();
     setupEventListeners();
+    setupDrawerCountControls();
+    setupDoorCountControls();
     loadProducts();
 
     // Setup scroll arrows for all grids

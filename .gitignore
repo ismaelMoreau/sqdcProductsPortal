@@ -41,6 +41,7 @@ logs/
 tmp/
 temp/
 *.tmp
+.playwright-mcp
 
 # Package manager lock files (optional - uncomment if needed)
 # package-lock.json
@@ -48,4 +49,4 @@ temp/
 # pnpm-lock.yaml
 
 # Legacy/old portal folder
-oldportal/
+oldportal/fiche_produits/planogram_2024/

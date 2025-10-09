@@ -56,3 +56,7 @@ Application 100% frontend - Aucun serveur requis
 ## Auteur
 
 Ismael Moreau - [GitHub](https://github.com/ismaelMoreau)
+
+---
+
+**Note importante:** Cette application fonctionne entièrement côté client sans serveur backend. Toutes les données sont stockées localement dans le navigateur.
