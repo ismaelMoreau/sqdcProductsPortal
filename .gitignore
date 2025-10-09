@@ -41,6 +41,7 @@ logs/
 tmp/
 temp/
 *.tmp
+.playwright-mcp
 
 # Package manager lock files (optional - uncomment if needed)
 # package-lock.json

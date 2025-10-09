@@ -17,7 +17,9 @@ const CONFIG = {
         CBD_CHANGES: 'sqdcCbdChanges',
         TYPE_CHANGES: 'sqdcProductTypeChanges',
         FORMAT_CHANGES: 'sqdcFormatChanges',
-        PRODUCT_ORDER: 'sqdcProductOrder'
+        PRODUCT_ORDER: 'sqdcProductOrder',
+        DRAWER_COUNT: 'sqdcDrawerCount',
+        DOOR_COUNT: 'sqdcDoorCount'
     },
     VALIDATION: {
         THC_MIN: 0,
