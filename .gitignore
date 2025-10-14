@@ -49,4 +49,5 @@ temp/
 # pnpm-lock.yaml
 
 # Legacy/old portal folder
-oldportal/fiche_produits/planogram_2024/
+oldportal/
+fiche_produits/planogram_2024/

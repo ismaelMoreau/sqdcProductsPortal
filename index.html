@@ -17,7 +17,10 @@
                 <a href="print-lists.html" class="print-lists-link" title="Gérer les listes d'impression">
                     🖨️ Listes d'impression
                 </a>
-                <span class="store-label">Succursale: 77074</span>
+                <button class="section-config-btn" id="sectionConfigBtn" title="Configurer les sections">
+                    <span class="config-icon">⚙️</span> Configurer les sections
+                </button>
+                <span class="store-label">Succursale: <span id="storeIdDisplay">77074</span></span>
             </div>
         </div>
     </header>
@@ -47,142 +50,23 @@
         <div class="search-section">
             <input type="text" id="searchInput" placeholder="Rechercher par nom ou marque..." aria-label="Rechercher des produits par nom ou marque">
         </div>
+        
+        <button class="add-product-btn" id="addProductBtn" title="Ajouter un nouveau produit">
+            <span class="add-icon">➕</span> Ajouter un produit
+        </button>
     </div>
 
-    <main>
-        <section class="strain-section indica-section" aria-labelledby="indica-title">
-            <div class="section-header">
-                <span class="section-icon indica-icon">●</span>
-                <h2 id="indica-title">Indica</h2>
-                <span class="product-count" id="indica-count" aria-live="polite" aria-atomic="true">0</span>
-                <div class="section-door-control">
-                    <label for="doorCountIndica">Portes:</label>
-                    <input type="number" id="doorCountIndica" min="1" max="30" value="12" title="Nombre de portes pour Indica">
-                </div>
-                <div class="section-drawer-control">
-                    <label for="drawerCountIndica">Tiroirs:</label>
-                    <input type="number" id="drawerCountIndica" min="1" max="30" value="12" title="Nombre de tiroirs pour Indica">
-                </div>
-            </div>
-            <div class="subsection">
-                <div class="subsection-header">
-                    <span>3,5 g</span>
-                    <span class="subsection-count" id="indica-3.5g-count">0</span>
-                </div>
-                <div class="grid-wrapper">
-                    <div class="scroll-arrow scroll-arrow-left" role="button" tabindex="0" aria-label="Faire défiler les produits vers la gauche">‹</div>
-                    <div class="products-grid" id="indica-grid-3.5g"></div>
-                    <div class="scroll-arrow scroll-arrow-right" role="button" tabindex="0" aria-label="Faire défiler les produits vers la droite">›</div>
-                </div>
-            </div>
-            <div class="subsection">
-                <div class="subsection-header">
-                    <span>Autres formats</span>
-                    <span class="subsection-count" id="indica-other-count">0</span>
-                </div>
-                <div class="grid-wrapper">
-                    <div class="scroll-arrow scroll-arrow-left">‹</div>
-                    <div class="products-grid" id="indica-grid-other"></div>
-                    <div class="scroll-arrow scroll-arrow-right">›</div>
-                </div>
-            </div>
-        </section>
+    <div class="wall-navigation" id="wallNavigation">
+        <button class="wall-nav-btn active" data-wall="front">
+            🏠 Mur avant
+        </button>
+        <button class="wall-nav-btn" data-wall="side">
+            🔲 Mur latéral
+        </button>
+    </div>
 
-        <section class="strain-section sativa-section">
-            <div class="section-header">
-                <span class="section-icon sativa-icon">●</span>
-                <h2>Sativa</h2>
-                <span class="product-count" id="sativa-count">0</span>
-                <div class="section-door-control">
-                    <label for="doorCountSativa">Portes:</label>
-                    <input type="number" id="doorCountSativa" min="1" max="30" value="12" title="Nombre de portes pour Sativa">
-                </div>
-                <div class="section-drawer-control">
-                    <label for="drawerCountSativa">Tiroirs:</label>
-                    <input type="number" id="drawerCountSativa" min="1" max="30" value="12" title="Nombre de tiroirs pour Sativa">
-                </div>
-            </div>
-            <div class="subsection">
-                <div class="subsection-header">
-                    <span>3,5 g</span>
-                    <span class="subsection-count" id="sativa-3.5g-count">0</span>
-                </div>
-                <div class="grid-wrapper">
-                    <div class="scroll-arrow scroll-arrow-left">‹</div>
-                    <div class="products-grid" id="sativa-grid-3.5g"></div>
-                    <div class="scroll-arrow scroll-arrow-right">›</div>
-                </div>
-            </div>
-            <div class="subsection">
-                <div class="subsection-header">
-                    <span>Autres formats</span>
-                    <span class="subsection-count" id="sativa-other-count">0</span>
-                </div>
-                <div class="grid-wrapper">
-                    <div class="scroll-arrow scroll-arrow-left">‹</div>
-                    <div class="products-grid" id="sativa-grid-other"></div>
-                    <div class="scroll-arrow scroll-arrow-right">›</div>
-                </div>
-            </div>
-        </section>
-
-        <section class="strain-section oz28-section">
-            <div class="section-header">
-                <span class="section-icon oz28-icon">●</span>
-                <h2>28g</h2>
-                <span class="product-count" id="oz28-count">0</span>
-                <div class="section-door-control">
-                    <label for="doorCountOz28">Portes:</label>
-                    <input type="number" id="doorCountOz28" min="1" max="30" value="12" title="Nombre de portes pour 28g">
-                </div>
-            </div>
-            <div class="subsection">
-                <div class="grid-wrapper">
-                    <div class="scroll-arrow scroll-arrow-left">‹</div>
-                    <div class="products-grid oz28-grid" id="oz28-grid"></div>
-                    <div class="scroll-arrow scroll-arrow-right">›</div>
-                </div>
-            </div>
-        </section>
-
-        <section class="strain-section hybride-section">
-            <div class="section-header">
-                <span class="section-icon hybride-icon">●</span>
-                <h2>Hybride</h2>
-                <span class="product-count" id="hybride-count">0</span>
-                <div class="section-door-control">
-                    <label for="doorCountHybride">Portes:</label>
-                    <input type="number" id="doorCountHybride" min="1" max="30" value="12" title="Nombre de portes pour Hybride">
-                </div>
-                <div class="section-drawer-control">
-                    <label for="drawerCountHybride">Tiroirs:</label>
-                    <input type="number" id="drawerCountHybride" min="1" max="30" value="12" title="Nombre de tiroirs pour Hybride">
-                </div>
-            </div>
-            <div class="subsection">
-                <div class="subsection-header">
-                    <span>3,5 g</span>
-                    <span class="subsection-count" id="hybride-3.5g-count">0</span>
-                </div>
-                <div class="grid-wrapper">
-                    <div class="scroll-arrow scroll-arrow-left">‹</div>
-                    <div class="products-grid" id="hybride-grid-3.5g"></div>
-                    <div class="scroll-arrow scroll-arrow-right">›</div>
-                </div>
-            </div>
-            <div class="subsection">
-                <div class="subsection-header">
-                    <span>Autres formats</span>
-                    <span class="subsection-count" id="hybride-other-count">0</span>
-                </div>
-                <div class="grid-wrapper">
-                    <div class="scroll-arrow scroll-arrow-left">‹</div>
-                    <div class="products-grid" id="hybride-grid-other"></div>
-                    <div class="scroll-arrow scroll-arrow-right">›</div>
-                </div>
-            </div>
-        </section>
-
+        <main>
+        <!-- Dynamic sections will be generated here by regenerateSectionsHTML() -->
     </main>
 
     <!-- Tooltip for product details -->
@@ -277,6 +161,188 @@
             <div class="modal-footer">
                 <button class="modal-btn modal-btn-cancel" id="modalCancelBtn" aria-label="Annuler les modifications">Annuler</button>
                 <button class="modal-btn modal-btn-save" id="modalSaveBtn" aria-label="Sauvegarder les modifications">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal-overlay" id="addProductModal" role="dialog" aria-modal="true" aria-labelledby="addProductModalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="addProductModalTitle">Ajouter un nouveau produit</h3>
+                <button class="modal-close" id="addProductModalCloseBtn" aria-label="Fermer">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-field">
+                    <label for="addProductName">Nom du produit: <span style="color: #ff6b6b;">*</span></label>
+                    <input type="text" id="addProductName" placeholder="Ex: Blue Dream" aria-required="true">
+                </div>
+
+                <div class="modal-field">
+                    <label for="addProductBrand">Marque: <span style="color: #ff6b6b;">*</span></label>
+                    <input type="text" id="addProductBrand" placeholder="Ex: Aurora" aria-required="true">
+                </div>
+
+                <div class="modal-field">
+                    <label for="addProductSku">SKU: <span style="color: #ff6b6b;">*</span></label>
+                    <input type="text" id="addProductSku" placeholder="Ex: 12345678" aria-required="true">
+                </div>
+
+                <div class="modal-field">
+                    <label for="addProductSection">Section: <span style="color: #ff6b6b;">*</span></label>
+                    <select id="addProductSection" aria-required="true">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="modal-field">
+                    <label for="addProductFormat">Format: <span style="color: #ff6b6b;">*</span></label>
+                    <select id="addProductFormat" aria-required="true">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="modal-field">
+                    <label for="addProductThc">THC %: <span style="color: #ff6b6b;">*</span></label>
+                    <input type="number" id="addProductThc" step="0.1" min="0" max="100" placeholder="Ex: 24.5" aria-required="true">
+                </div>
+
+                <div class="modal-field">
+                    <label for="addProductCbd">CBD %:</label>
+                    <input type="number" id="addProductCbd" step="0.1" min="0" max="100" placeholder="Ex: 0.5 (optionnel)" aria-required="false">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-cancel" id="addProductCancelBtn" aria-label="Annuler">Annuler</button>
+                <button class="modal-btn modal-btn-save" id="addProductSaveBtn" aria-label="Ajouter le produit">Ajouter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Manager Modal -->
+    <div class="modal-overlay" id="sectionManagerModal" role="dialog" aria-modal="true" aria-labelledby="sectionManagerTitle">
+        <div class="modal-content section-manager-modal">
+            <div class="modal-header">
+                <h3 id="sectionManagerTitle">Gestionnaire de Sections</h3>
+                <button class="modal-close" id="sectionManagerCloseBtn" aria-label="Fermer">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Wall Navigation Tabs -->
+                <div class="manager-section">
+                    <h4>Organisation par mur</h4>
+                    <div class="wall-tabs">
+                        <button class="wall-tab active" data-wall="front">Mur avant</button>
+                        <button class="wall-tab" data-wall="side">Mur latéral</button>
+                    </div>
+                </div>
+
+                <!-- Sections List -->
+                <div class="manager-section">
+                    <div class="section-header-bar">
+                        <h4>Sections</h4>
+                        <button class="btn-add-section" id="addSectionBtn">
+                            <span>+</span> Ajouter une section
+                        </button>
+                    </div>
+                    
+                    <div class="sections-list" id="sectionsList">
+                        <!-- Dynamic section items will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-cancel" id="sectionManagerCancelBtn">Annuler</button>
+                <button class="modal-btn modal-btn-save" id="sectionManagerSaveBtn">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Editor Modal (nested) -->
+    <div class="modal-overlay" id="sectionEditorModal" role="dialog" aria-modal="true">
+        <div class="modal-content section-editor-modal">
+            <div class="modal-header">
+                <h3 id="sectionEditorTitle">Éditer la section</h3>
+                <button class="modal-close" id="sectionEditorCloseBtn">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Section Name Preview (readonly) -->
+                <div class="form-group">
+                    <label for="sectionNameDisplay">Nom de la section (automatique)</label>
+                    <input type="text" id="sectionNameDisplay" readonly disabled>
+                    <p class="help-text">💡 Le nom est généré automatiquement selon les sélections</p>
+                </div>
+
+                <!-- Format Selection -->
+                <div class="form-group">
+                    <label>Formats inclus</label>
+                    <div class="checkbox-group" id="formatCheckboxes">
+                        <!-- Dynamically generated checkboxes -->
+                    </div>
+                </div>
+
+                <!-- Strain Type Selection -->
+                <div class="form-group">
+                    <label>Types de souches</label>
+                    <div class="checkbox-group" id="strainTypeCheckboxes">
+                        <!-- Dynamically generated checkboxes -->
+                    </div>
+                </div>
+
+                <!-- Storage Type -->
+                <div class="form-group">
+                    <label>Type de rangement</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="storageType" value="door" checked>
+                            🚪 Portes (affichées en haut)
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="storageType" value="drawer">
+                            📦 Tiroirs (affichés en bas)
+                        </label>
+                    </div>
+                    <p class="help-text">
+                        💡 Les sections "Portes" s'affichent en haut, les "Tiroirs" en bas
+                    </p>
+                </div>
+
+                <!-- Storage Count -->
+                <div class="form-group">
+                    <label for="storageCount">Nombre d'unités de rangement</label>
+                    <input type="number" id="storageCount" min="1" max="30" value="12">
+                    <p class="help-text">
+                        💡 Nombre de portes ou tiroirs selon le type sélectionné
+                    </p>
+                </div>
+
+                <!-- Wall Position -->
+                <div class="form-group">
+                    <label>Position</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="wallPosition" value="front" checked>
+                            Mur avant
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="wallPosition" value="side">
+                            Mur latéral
+                        </label>
+                    </div>
+                    <p class="help-text">
+                        💡 Utilisé pour organiser l'interface et éviter le défilement
+                    </p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-cancel" id="sectionEditorCancelBtn">Annuler</button>
+                <button class="modal-btn modal-btn-delete" id="sectionEditorDeleteBtn" style="margin-right: auto;">
+                    🗑️ Supprimer
+                </button>
+                <button class="modal-btn modal-btn-save" id="sectionEditorSaveBtn">Sauvegarder</button>
             </div>
         </div>
     </div>

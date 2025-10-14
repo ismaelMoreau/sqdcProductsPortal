@@ -177,8 +177,12 @@ h1 {
 .search-section {
     flex: 1;
     max-width: 400px;
-    order: -1;
+    order: -2;
     align-self: flex-end;
+}
+
+.add-product-btn {
+    order: -1;
 }
 
 #searchInput {
@@ -226,11 +230,106 @@ main {
     max-width: 100%;
     margin: 0 auto;
     padding: 0.5rem;
-    display: grid;
-    grid-template-columns: 1fr 1fr 0.5fr 1fr;
-    gap: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
     height: calc(100vh - 200px);
-    align-items: start;
+    position: relative;
+}
+
+/* Zone pour les sections avec portes (en haut) */
+.sections-row-doors {
+    height: 50%;
+    min-height: 300px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap !important;
+    gap: 0.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+    padding: 0.5rem 50px;
+    scroll-behavior: smooth;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 8px 8px 0 0;
+    border: 1px solid var(--sqdc-gray);
+    border-bottom: none;
+    align-items: stretch;
+    align-content: flex-start;
+    width: 100%;
+}
+
+/* Ensure sections in doors row don't wrap */
+.sections-row-doors .strain-section {
+    display: inline-flex !important;
+    flex-direction: column;
+}
+
+.sections-row-doors::-webkit-scrollbar {
+    display: none;
+}
+
+.sections-row-doors {
+    scrollbar-width: none;
+}
+
+/* Zone pour les sections avec tiroirs (en bas) */
+.sections-row-drawers {
+    flex: 1;
+    min-height: 300px;
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+    padding: 0.5rem 50px;
+    scroll-behavior: smooth;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 0 0 8px 8px;
+    border: 1px solid var(--sqdc-gray);
+    border-top: none;
+    width: 100%;
+}
+
+.sections-row-drawers::-webkit-scrollbar {
+    display: none;
+}
+
+.sections-row-drawers {
+    scrollbar-width: none;
+}
+
+/* Flèches de navigation pour les rangées */
+.row-scroll-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: var(--sqdc-yellow);
+    font-size: 2.5rem;
+    width: 40px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 200;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    border: 2px solid var(--sqdc-yellow);
+}
+
+.row-scroll-arrow:hover {
+    background-color: var(--sqdc-yellow);
+    color: var(--sqdc-black);
+}
+
+.row-scroll-arrow-left {
+    left: 0;
+}
+
+.row-scroll-arrow-right {
+    right: 0;
 }
 
 .strain-section {
@@ -238,15 +337,136 @@ main {
     flex-direction: column;
     height: 100%;
     overflow: hidden;
-}
-
-.oz28-section {
-    height: auto;
-    max-height: 50%;
+    width: auto;
+    min-width: 200px;
+    max-width: none;
+    flex-shrink: 0;
+    flex-grow: 0;
+    position: relative;
 }
 
 .strain-section.hidden {
     display: none;
+}
+
+/* Resize handle for adjustable sections */
+.section-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 150;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.section-resize-handle:hover,
+.section-resize-handle.active {
+    background: linear-gradient(to right, transparent, var(--sqdc-yellow), transparent);
+}
+
+.section-resize-handle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 40px;
+    background: rgba(255, 215, 0, 0.5);
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.section-resize-handle:hover::before,
+.section-resize-handle.active::before {
+    opacity: 1;
+}
+
+.strain-section.resizing {
+    user-select: none;
+    pointer-events: none;
+}
+
+.strain-section.resizing * {
+    user-select: none;
+    pointer-events: none;
+}
+
+/* Vertical resize handle between doors and drawers rows */
+.row-resize-handle {
+    position: relative;
+    width: 100%;
+    height: 8px;
+    cursor: row-resize;
+    z-index: 150;
+    background: transparent;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.row-resize-handle:hover,
+.row-resize-handle.active {
+    background: linear-gradient(to bottom, transparent, var(--sqdc-yellow), transparent);
+}
+
+.row-resize-handle::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 4px;
+    background: rgba(255, 215, 0, 0.5);
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.row-resize-handle:hover::before,
+.row-resize-handle.active::before {
+    opacity: 1;
+}
+
+main.row-resizing {
+    user-select: none;
+}
+
+main.row-resizing * {
+    user-select: none;
+    pointer-events: none;
+}
+
+main.row-resizing .row-resize-handle {
+    pointer-events: auto;
+}
+
+/* Section drag and drop styles */
+.strain-section.dragging-section {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.strain-section.drag-over-section {
+    border-left: 4px solid var(--sqdc-yellow);
+    margin-left: -4px;
+}
+
+.strain-section .section-header {
+    cursor: grab;
+}
+
+.strain-section .section-header:active {
+    cursor: grabbing;
+}
+
+.sections-row-doors.drag-active-row,
+.sections-row-drawers.drag-active-row {
+    background-color: rgba(255, 215, 0, 0.1);
 }
 
 .section-header {
@@ -307,6 +527,7 @@ main {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
 
 .subsection-header {
@@ -341,12 +562,12 @@ main {
     border-bottom-color: var(--sativa-color);
 }
 
-.oz28-section .section-header {
-    border-bottom-color: var(--oz28-color);
-}
-
 .hybride-section .section-header {
     border-bottom-color: var(--hybride-color);
+}
+
+.mixed-section .section-header {
+    border-bottom-color: var(--sqdc-yellow);
 }
 
 .section-header h2 {
@@ -380,29 +601,24 @@ main {
     flex: 1;
     align-content: start;
     scroll-behavior: smooth;
+    width: 100%;
+}
+
+/* Override for door sections - force horizontal flex layout */
+.section-with-doors .products-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    grid-template-rows: none !important;
+    grid-auto-flow: initial !important;
+    grid-auto-columns: initial !important;
+    align-items: stretch;
 }
 
 /* Force flex layout for door sections - override grid */
 #indica-grid-3\.5g,
 #sativa-grid-3\.5g,
 #hybride-grid-3\.5g,
-#oz28-grid {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    grid-template-rows: unset !important;
-    grid-auto-flow: unset !important;
-    grid-auto-columns: unset !important;
-    gap: 16px;
-    padding: 16px 12px;
-    position: relative;
-    background: #0d0d0d;
-    border-radius: 8px;
-    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.95);
-    align-items: flex-start;
-    overflow-x: auto;
-    overflow-y: hidden;
-}
 
 .scroll-arrow {
     position: absolute;
@@ -468,6 +684,39 @@ main {
     border-radius: 8px;
     box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.95);
     align-items: start;
+}
+
+/* Dynamic sections with doors - flex layout for vertical arrangement */
+.section-with-doors .products-grid {
+    gap: 16px;
+    padding: 16px 12px;
+    background: #0d0d0d;
+    border-radius: 8px;
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.95);
+}
+
+/* Force doors to stay in a single horizontal row */
+.section-with-doors .products-grid .door {
+    display: inline-flex !important;
+    float: none !important;
+}
+
+/* Dynamic sections with drawers - grid layout for horizontal arrangement */
+.section-with-drawers .products-grid {
+    display: grid;
+    grid-template-rows: repeat(3, auto);
+    grid-auto-flow: column;
+    grid-auto-columns: 180px;
+    gap: 12px;
+    column-gap: 16px;
+    row-gap: 12px;
+    padding: 16px 12px;
+    background: #0d0d0d;
+    border-radius: 8px;
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.95);
+    align-items: start;
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
 /* Drawer container */
@@ -688,25 +937,29 @@ main {
    DOOR SYSTEM - For 3.5g and 28g sections
    ============================================ */
 
-/* Door container - vertical layout with 4 labels stacked */
+/* Door container - vertical layout with 6 labels stacked */
 .door {
     position: relative;
     width: 120px;
     min-width: 120px;
     max-width: 120px;
-    min-height: 480px;
+    height: 650px;
+    min-height: 650px;
+    max-height: 650px;
     background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
     border: 2px solid #4CAF50;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    display: flex;
+    display: inline-flex;
     flex-direction: column;
     justify-content: space-between;
     padding: 8px;
     flex-shrink: 0;
+    flex-grow: 0;
     pointer-events: none; /* Let drag-and-drop pass through to product cards */
+    vertical-align: top;
 }
 
 .door:hover {
@@ -716,7 +969,7 @@ main {
 }
 
 .door.open {
-    min-height: 540px;
+    min-height: 720px;
     background: linear-gradient(135deg, #353535 0%, #282828 50%, #353535 100%);
     border-color: var(--sqdc-yellow);
 }
@@ -748,13 +1001,13 @@ main {
     cursor: pointer;
 }
 
-/* Door labels - 4 cards stacked vertically */
+/* Door labels - 6 cards stacked vertically */
 .door-labels {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
     padding: 4px;
     flex: 1;
@@ -998,10 +1251,6 @@ main {
 
 .drawer.open .drawer-handle {
     display: none;
-}
-
-.oz28-grid {
-    grid-template-rows: repeat(4, 1fr) !important;
 }
 
 .product-card {
@@ -1614,4 +1863,432 @@ main {
     .product-card-edit-btn {
         opacity: 1;
     }
+}
+
+/* ============================================
+   SECTION MANAGER STYLES
+   ============================================ */
+
+.section-config-btn {
+    background-color: var(--sqdc-gray);
+    border: 2px solid var(--sqdc-yellow);
+    border-radius: 4px;
+    padding: 0.3rem 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.section-config-btn:hover {
+    background-color: var(--sqdc-light-gray);
+    border-color: var(--sqdc-light-yellow);
+    transform: translateY(-1px);
+}
+
+.config-icon {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.section-config-btn:hover .config-icon {
+    transform: rotate(90deg);
+}
+
+.add-product-btn {
+    background-color: var(--sqdc-yellow);
+    color: var(--sqdc-black);
+    border: 2px solid var(--sqdc-yellow);
+    border-radius: 4px;
+    padding: 0.3rem 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.add-product-btn:hover {
+    background-color: var(--sqdc-light-yellow);
+    border-color: var(--sqdc-light-yellow);
+    transform: translateY(-1px);
+}
+
+.add-icon {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.add-product-btn:hover .add-icon {
+    transform: scale(1.2);
+}
+
+/* Wall Navigation */
+.wall-navigation {
+    background-color: var(--sqdc-gray);
+    padding: 0.75rem 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    border-bottom: 2px solid var(--sqdc-light-gray);
+}
+
+.wall-nav-btn {
+    background-color: var(--sqdc-light-gray);
+    color: white;
+    border: 2px solid transparent;
+    padding: 0.75rem 2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.wall-nav-btn:hover {
+    background-color: var(--sqdc-gray);
+    transform: translateY(-2px);
+}
+
+.wall-nav-btn.active {
+    background-color: var(--sqdc-yellow);
+    color: var(--sqdc-black);
+    border-color: var(--sqdc-yellow);
+}
+
+/* Section Manager Modal */
+.section-manager-modal {
+    max-width: 700px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.manager-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--sqdc-light-gray);
+}
+
+.manager-section:last-child {
+    border-bottom: none;
+}
+
+.manager-section h4 {
+    color: var(--sqdc-yellow);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.section-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.btn-add-section {
+    background-color: var(--sqdc-yellow);
+    color: var(--sqdc-black);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.btn-add-section:hover {
+    background-color: var(--sqdc-light-yellow);
+    transform: translateY(-1px);
+}
+
+.btn-add-section span {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* Wall Tabs */
+.wall-tabs {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.wall-tab {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background-color: var(--sqdc-light-gray);
+    color: white;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.wall-tab:hover {
+    background-color: var(--sqdc-gray);
+}
+
+.wall-tab.active {
+    background-color: var(--sqdc-yellow);
+    color: var(--sqdc-black);
+    border-color: var(--sqdc-yellow);
+}
+
+/* Sections List */
+.sections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.section-item {
+    background-color: var(--sqdc-light-gray);
+    border: 1px solid var(--sqdc-gray);
+    border-radius: 4px;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.section-item:hover {
+    border-color: var(--sqdc-yellow);
+    transform: translateX(4px);
+}
+
+.section-item-info {
+    flex: 1;
+}
+
+.section-item-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 0.25rem;
+}
+
+.section-item-details {
+    font-size: 0.85rem;
+    color: #999;
+}
+
+.section-item-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-edit-section {
+    background-color: var(--sqdc-gray);
+    color: white;
+    border: 1px solid var(--sqdc-light-gray);
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.btn-edit-section:hover {
+    background-color: var(--sqdc-yellow);
+    color: var(--sqdc-black);
+    border-color: var(--sqdc-yellow);
+}
+
+/* Section Editor Modal */
+.section-editor-modal {
+    max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    color: var(--sqdc-light-yellow);
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"] {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--sqdc-light-gray);
+    border: 2px solid var(--sqdc-gray);
+    border-radius: 4px;
+    color: white;
+    font-size: 1rem;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--sqdc-yellow);
+}
+
+.form-group input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: white;
+    cursor: pointer;
+    padding: 0.5rem;
+    background-color: var(--sqdc-light-gray);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-weight: 400;
+}
+
+.checkbox-group label:hover {
+    background-color: var(--sqdc-gray);
+}
+
+.checkbox-group input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--sqdc-yellow);
+}
+
+/* Radio group styling for storage type selection */
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background-color: var(--sqdc-light-gray);
+    padding: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.radio-label:hover {
+    background-color: rgba(255, 215, 0, 0.05);
+    border: 1px solid var(--sqdc-yellow);
+}
+
+.radio-label input[type="radio"] {
+    cursor: pointer;
+    accent-color: var(--sqdc-yellow);
+    width: 20px;
+    height: 20px;
+}
+
+/* Storage indicator styles for section headers (read-only display) */
+.storage-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.storage-indicator.storage-door {
+    border-left: 3px solid var(--sqdc-yellow);
+}
+
+.storage-indicator.storage-drawer {
+    border-left: 3px solid #999;
+}
+
+.help-text {
+    font-size: 0.85rem;
+    color: #999;
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
+/* Checkbox labels for format and strain selection */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.checkbox-label:hover {
+    background-color: rgba(255, 215, 0, 0.05);
+}
+
+.checkbox-label input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--sqdc-yellow);
+    width: 18px;
+    height: 18px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    background-color: var(--sqdc-light-gray);
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+.modal-btn-delete {
+    background-color: #ff6b6b;
+    color: white;
+}
+
+.modal-btn-delete:hover {
+    background-color: #ff5252;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--sqdc-yellow);
 }
