@@ -786,17 +786,14 @@ function openEditModalBySku(sku) {
     // Set modal content
     modalProductName.textContent = product.name;
 
-    // Populate section select with existing sections
-    populateSectionSelect();
+    // Populate strain type select
+    populateStrainTypeSelect();
     
     // Populate format select with available formats
     populateFormatSelect();
 
-    // Find and select the section that matches the product's type and format
-    const matchingSection = findBestMatchingSection(product);
-    if (matchingSection) {
-        modalSectionSelect.value = matchingSection.id;
-    }
+    // Set current strain type
+    modalSectionSelect.value = product.type;
 
     // Set current format
     const currentFormat = product.manualFormat || product.format;
@@ -836,44 +833,17 @@ function closeEditModal() {
     }
 }
 
-// Find the best matching section for a product based on type and format
-function findBestMatchingSection(product) {
-    const productType = product.type;
-    const productFormat = product.manualFormat || product.format;
-    
-    // Try to find a section that matches both type and format
-    let matchingSection = sectionsConfig.find(section => {
-        return section.visible &&
-               section.strainTypes.includes(productType) &&
-               section.formats.some(f => CONFIG.SECTION_CONFIG.AVAILABLE_FORMATS[f] === productFormat);
-    });
-    
-    // If no exact match, try to find a section that matches just the type
-    if (!matchingSection) {
-        matchingSection = sectionsConfig.find(section => {
-            return section.visible && section.strainTypes.includes(productType);
-        });
-    }
-    
-    return matchingSection;
-}
-
-// Populate section select with existing sections
-function populateSectionSelect() {
+// Populate strain type select with available strain types
+function populateStrainTypeSelect() {
     const modalSectionSelect = document.getElementById('modalSectionSelect');
     modalSectionSelect.innerHTML = '';
     
-    // Get all visible sections sorted by order
-    const visibleSections = sectionsConfig
-        .filter(s => s.visible)
-        .sort((a, b) => a.order - b.order);
-    
-    // Add an option for each section
-    visibleSections.forEach(section => {
+    // Add options for each strain type
+    Object.values(CONFIG.SECTION_CONFIG.STRAIN_TYPES).forEach(type => {
+        if (type === 'Tous') return; // Skip 'Tous' option
         const option = document.createElement('option');
-        option.value = section.id;
-        option.textContent = section.name;
-        option.dataset.sectionId = section.id;
+        option.value = type;
+        option.textContent = type;
         modalSectionSelect.appendChild(option);
     });
 }
@@ -974,18 +944,8 @@ function findProductBySku(sku) {
     return allProducts.find(p => p.sku === sku);
 }
 
-// Helper: Update product section and format
-function updateProductSection(product, sectionId, newFormat) {
-    // Find the selected section to get its strain type
-    const section = getSectionById(sectionId);
-    if (!section) {
-        console.error('Section not found:', sectionId);
-        return;
-    }
-    
-    // Use the first strain type of the section as the product type
-    const newType = section.strainTypes[0];
-    
+// Helper: Update product type and format
+function updateProductSection(product, newType, newFormat) {
     // Update type if changed
     if (newType !== product.type) {
         product.type = newType;
