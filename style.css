@@ -706,7 +706,7 @@ main.row-resizing .row-resize-handle {
     display: grid;
     grid-template-rows: repeat(3, auto);
     grid-auto-flow: column;
-    grid-auto-columns: 180px;
+    grid-auto-columns: 260px;
     gap: 12px;
     column-gap: 16px;
     row-gap: 12px;
@@ -723,9 +723,9 @@ main.row-resizing .row-resize-handle {
 .drawer {
     position: relative;
     width: 100%;
-    min-width: 180px;
+    min-width: 260px;
     min-height: 100px;
-    max-width: 180px;
+    max-width: 260px;
     background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
     border: 2px solid #FFD700;
     border-radius: 8px;
@@ -775,6 +775,62 @@ main.row-resizing .row-resize-handle {
     flex: 1;
 }
 
+/* Slot styling */
+.slot {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 2px;
+    border-radius: 4px;
+    min-height: 90px;
+    min-width: 110px;
+    transition: all 0.2s ease;
+}
+
+.slot.empty {
+    border: 2px dashed #ccc;
+    background: rgba(0,0,0,0.02);
+}
+
+.slot.expanded-occupied {
+    border: 2px dashed rgba(153, 153, 153, 0.3);
+    background: transparent;
+    pointer-events: none; /* Prevent interaction with occupied slot */
+}
+
+.slot.drag-over {
+    border-color: #4CAF50;
+    background: rgba(76, 175, 80, 0.1);
+}
+
+.slot.drag-invalid {
+    border-color: #f44336;
+    background: rgba(244, 67, 54, 0.1);
+}
+
+.slot-empty-label,
+.slot-occupied-label {
+    font-size: 10px;
+    color: #999;
+    font-style: italic;
+    text-align: center;
+    pointer-events: none; /* Allow drag events to pass through to parent slot */
+}
+
+.door-slot {
+    flex-direction: row; /* Allow split cards to sit side by side */
+    flex-wrap: wrap; /* Wrap if needed */
+    gap: 2px;
+    justify-content: center;
+}
+
+.drawer-slot {
+    flex-direction: row;
+    gap: 6px;
+}
+
 /* Empty drawer styling */
 .drawer.empty {
     opacity: 0.4;
@@ -788,23 +844,35 @@ main.row-resizing .row-resize-handle {
 }
 
 .drawer-product-card {
-    aspect-ratio: 1;
-    flex: 1;
-    max-width: 90px;
+    width: 106px;
+    height: 106px;
     border-radius: 3px;
     padding: 4px;
     transition: all 0.2s ease;
-    cursor: pointer;
+    cursor: grab;
+    cursor: -webkit-grab;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
+    overflow: visible;
     font-size: 11px;
     text-align: center;
     border: 1px solid rgba(0,0,0,0.2);
     font-weight: 500;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    position: relative;
+    flex-shrink: 0;
+}
+
+.drawer-product-card:active {
+    cursor: grabbing;
+    cursor: -webkit-grabbing;
+}
+
+.drawer-product-card:hover .product-remove-btn,
+.door-product-card:hover .product-remove-btn {
+    opacity: 1;
 }
 
 /* Color coding by type */
@@ -826,6 +894,12 @@ main.row-resizing .row-resize-handle {
 .drawer-product-card[data-type="Hybride"] {
     background-color: var(--hybride-color);
     color: #fff;
+}
+
+/* Special formats (hashish, edibles, infused, oils) - brown color */
+.drawer-product-card.special-format {
+    background-color: #8B6914 !important;
+    color: #fff !important;
 }
 
 .drawer-product-card:hover {
@@ -940,12 +1014,12 @@ main.row-resizing .row-resize-handle {
 /* Door container - vertical layout with 6 labels stacked */
 .door {
     position: relative;
-    width: 120px;
-    min-width: 120px;
-    max-width: 120px;
-    height: 650px;
-    min-height: 650px;
-    max-height: 650px;
+    width: 140px;
+    min-width: 140px;
+    max-width: 140px;
+    height: 620px;
+    min-height: 620px;
+    max-height: 620px;
     background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
     border: 2px solid #4CAF50;
     border-radius: 8px;
@@ -954,11 +1028,10 @@ main.row-resizing .row-resize-handle {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     display: inline-flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     padding: 8px;
     flex-shrink: 0;
     flex-grow: 0;
-    pointer-events: none; /* Let drag-and-drop pass through to product cards */
     vertical-align: top;
 }
 
@@ -986,6 +1059,50 @@ main.row-resizing .row-resize-handle {
     text-align: center;
 }
 
+.door-occupied-label {
+    font-size: 10px;
+    color: #999;
+    font-style: italic;
+    text-align: center;
+    opacity: 0.6;
+}
+
+/* Empty doors/drawers - visual feedback */
+.door.empty,
+.drawer.empty {
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.02),
+        rgba(255, 255, 255, 0.02) 10px,
+        rgba(255, 255, 255, 0.05) 10px,
+        rgba(255, 255, 255, 0.05) 20px
+    );
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+}
+
+.door.expanded-occupied {
+    background: rgba(100, 100, 100, 0.3);
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Drag over states for slots */
+.door.drag-over,
+.drawer.drag-over {
+    background-color: rgba(76, 175, 80, 0.2);
+    border-color: #4CAF50;
+    border-width: 3px;
+    border-style: solid;
+}
+
+.door.drag-invalid,
+.drawer.drag-invalid {
+    background-color: rgba(244, 67, 54, 0.2);
+    border-color: #f44336;
+    border-width: 3px;
+    border-style: solid;
+}
+
 /* Door handle - vertical on the side */
 .door-handle {
     position: absolute;
@@ -1003,35 +1120,48 @@ main.row-resizing .row-resize-handle {
 
 /* Door labels - 6 cards stacked vertically */
 .door-labels {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    grid-template-rows: repeat(6, 90px); /* 6 fixed rows of 90px each */
     gap: 6px;
     width: 100%;
     padding: 4px;
     flex: 1;
+    justify-items: center;
+    align-items: start; /* Align to top of grid cell */
 }
 
 /* Door product card - individual label on door */
 .door-product-card {
-    width: 100%;
-    aspect-ratio: 1;
+    width: 106px;
+    height: 86px;
     border-radius: 3px;
     padding: 4px;
     transition: all 0.2s ease;
-    cursor: pointer;
+    cursor: grab;
+    cursor: -webkit-grab;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
+    overflow: visible;
     font-size: 11px;
     text-align: center;
     border: 1px solid rgba(0,0,0,0.2);
     font-weight: 500;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    pointer-events: auto; /* Cards can be clicked and dragged */
+    pointer-events: auto;
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* Prevent child elements from blocking drag events */
+.door-product-card > * {
+    pointer-events: none;
+}
+
+.door-product-card:active {
+    cursor: grabbing;
+    cursor: -webkit-grabbing;
 }
 
 /* Color coding by type for door cards */
@@ -1053,6 +1183,12 @@ main.row-resizing .row-resize-handle {
 .door-product-card[data-type="Hybride"] {
     background-color: var(--hybride-color);
     color: #fff;
+}
+
+/* Special formats (hashish, edibles, infused, oils) - brown color */
+.door-product-card.special-format {
+    background-color: #8B6914 !important;
+    color: #fff !important;
 }
 
 .door-product-card:hover {
@@ -1147,6 +1283,133 @@ main.row-resizing .row-resize-handle {
 .door-product-card.standalone[data-type="28g"] {
     border-color: var(--oz28-color);
     background: linear-gradient(145deg, rgba(255, 140, 0, 0.15), rgba(255, 140, 0, 0.05));
+}
+
+/* ============================================
+   Split cards - Half width for both doors and drawers
+   ============================================ */
+.door-product-card.split,
+.drawer-product-card.split {
+    width: calc(50% - 2px) !important;
+    max-width: calc(50% - 2px) !important;
+    min-width: calc(50% - 2px) !important;
+    display: inline-flex;
+    vertical-align: top;
+    margin-right: 2px;
+    font-size: 9px;
+}
+
+.door-product-card.split:last-child,
+.drawer-product-card.split:last-child {
+    margin-right: 0;
+}
+
+.door-product-card.split .door-product-name,
+.drawer-product-card.split .drawer-product-name {
+    font-size: 8px;
+    -webkit-line-clamp: 2;
+    margin-bottom: 1px;
+}
+
+.door-product-card.split .door-thc-value,
+.drawer-product-card.split .drawer-thc-value {
+    font-size: 9px;
+}
+
+.door-product-card.split .door-product-cbd,
+.drawer-product-card.split .drawer-product-cbd {
+    font-size: 7px;
+}
+
+/* Split pair container - wraps two split cards together */
+.split-pair {
+    display: flex;
+    gap: 2px;
+    width: 100%;
+}
+
+/* ============================================
+   Expanded height cards - Double height for doors only
+   ============================================ */
+.door-product-card.expand-height {
+    grid-row: span 2;
+    height: 186px; /* 2 rows of 90px + 1 gap of 6px */
+    width: 106px;
+    font-size: 13px;
+    padding: 8px;
+    gap: 6px;
+}
+
+.door-product-card.expand-height .door-product-name {
+    font-size: 12px;
+    -webkit-line-clamp: 3;
+    margin-bottom: 4px;
+}
+
+.door-product-card.expand-height .door-thc-value {
+    font-size: 14px;
+}
+
+.door-product-card.expand-height .door-product-cbd {
+    font-size: 10px;
+    margin-top: 2px;
+}
+
+/* Show additional info on expanded cards */
+.door-product-card.expand-height .door-product-brand {
+    font-size: 10px;
+    font-weight: 500;
+    opacity: 0.9;
+    margin-top: 2px;
+}
+
+.door-product-card.expand-height .door-product-format {
+    font-size: 9px;
+    font-weight: 500;
+    opacity: 0.8;
+    margin-top: 2px;
+}
+
+/* ============================================
+   Expanded height cards - Triple height (3 slots) for doors only
+   ============================================ */
+.door-product-card.expand-height-2 {
+    grid-row: span 3;
+    height: 282px; /* 3 rows of 90px + 2 gaps of 6px */
+    width: 106px;
+    font-size: 14px;
+    padding: 10px;
+    gap: 8px;
+}
+
+.door-product-card.expand-height-2 .door-product-name {
+    font-size: 13px;
+    -webkit-line-clamp: 4;
+    margin-bottom: 6px;
+}
+
+.door-product-card.expand-height-2 .door-thc-value {
+    font-size: 16px;
+}
+
+.door-product-card.expand-height-2 .door-product-cbd {
+    font-size: 11px;
+    margin-top: 3px;
+}
+
+/* Show additional info on triple-expanded cards */
+.door-product-card.expand-height-2 .door-product-brand {
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.9;
+    margin-top: 3px;
+}
+
+.door-product-card.expand-height-2 .door-product-format {
+    font-size: 10px;
+    font-weight: 500;
+    opacity: 0.8;
+    margin-top: 3px;
 }
 
 /* Door stock display - shown when open */
@@ -1264,11 +1527,127 @@ main.row-resizing .row-resize-handle {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
+    overflow: visible;
     font-size: 11px;
     text-align: center;
     border: 1px solid rgba(0,0,0,0.2);
     font-weight: 500;
+}
+
+.product-remove-btn {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #ff4444;
+    color: white;
+    border: 2px solid white;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 50;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+}
+
+.product-card:hover .product-remove-btn {
+    opacity: 1;
+}
+
+.product-remove-btn:hover {
+    background-color: #cc0000;
+    transform: scale(1.1);
+}
+
+/* Split button - divides card width in half */
+.product-split-btn {
+    position: absolute;
+    top: -6px;
+    right: 18px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #4a90e2;
+    color: white;
+    border: 2px solid white;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 50;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+}
+
+.product-card:hover .product-split-btn,
+.door-product-card:hover .product-split-btn,
+.drawer-product-card:hover .product-split-btn {
+    opacity: 1;
+}
+
+.product-split-btn:hover {
+    background-color: #3a7bc8;
+    transform: scale(1.1);
+}
+
+.product-split-btn.active {
+    background-color: #2ecc71;
+    opacity: 1;
+}
+
+/* Expand height button - doubles card height (doors only) */
+.product-expand-btn {
+    position: absolute;
+    top: -6px;
+    right: 42px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #9b59b6;
+    color: white;
+    border: 2px solid white;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 50;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+}
+
+.door-product-card:hover .product-expand-btn {
+    opacity: 1;
+}
+
+.product-expand-btn:hover {
+    background-color: #8e44ad;
+    transform: scale(1.1);
+}
+
+.product-expand-btn.active {
+    background-color: #e74c3c;
+    opacity: 1;
 }
 
 /* Color coding by type */
@@ -1290,6 +1669,12 @@ main.row-resizing .row-resize-handle {
 .product-card[data-type="Hybride"] {
     background-color: var(--hybride-color);
     color: #fff;
+}
+
+/* Special formats (hashish, edibles, infused, oils) - brown color */
+.product-card.special-format {
+    background-color: #8B6914 !important;
+    color: #fff !important;
 }
 
 .product-card:hover {
@@ -1322,6 +1707,26 @@ main.row-resizing .row-resize-handle {
 .drawer-product-card.card-hidden {
     visibility: hidden;
     pointer-events: none;
+}
+
+/* Misplaced products - products in wrong section format */
+.product-card.misplaced-product,
+.door-product-card.misplaced-product,
+.drawer-product-card.misplaced-product {
+    border: 2px solid #ff6b6b;
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(255, 107, 107, 0.05));
+    box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
+}
+
+.product-card.misplaced-product::before,
+.door-product-card.misplaced-product::before,
+.drawer-product-card.misplaced-product::before {
+    content: '⚠️';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    font-size: 0.9rem;
+    z-index: 1;
 }
 
 /* Drag and drop states */
@@ -1899,6 +2304,33 @@ main.row-resizing .row-resize-handle {
     transform: rotate(90deg);
 }
 
+.store-id-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    color: white;
+}
+
+.store-id-btn:hover {
+    background-color: var(--sqdc-light-gray);
+}
+
+.store-id-btn .edit-icon {
+    opacity: 0.6;
+    font-size: 0.9rem;
+    transition: opacity 0.2s ease;
+}
+
+.store-id-btn:hover .edit-icon {
+    opacity: 1;
+}
+
 .add-product-btn {
     background-color: var(--sqdc-yellow);
     color: var(--sqdc-black);
@@ -1927,6 +2359,14 @@ main.row-resizing .row-resize-handle {
 
 .add-product-btn:hover .add-icon {
     transform: scale(1.2);
+}
+
+.add-product-section {
+    border: 1px solid var(--sqdc-light-gray);
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background-color: rgba(0, 0, 0, 0.2);
 }
 
 /* Wall Navigation */
@@ -2090,23 +2530,62 @@ main.row-resizing .row-resize-handle {
 .section-item-actions {
     display: flex;
     gap: 0.5rem;
+    align-items: center;
 }
 
-.btn-edit-section {
-    background-color: var(--sqdc-gray);
-    color: white;
-    border: 1px solid var(--sqdc-light-gray);
-    padding: 0.5rem 0.75rem;
+.storage-controls {
+    display: flex;
+    gap: 0.25rem;
+    background-color: rgba(255, 255, 255, 0.05);
     border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
+    padding: 0.2rem;
 }
 
-.btn-edit-section:hover {
+.btn-increase-storage,
+.btn-decrease-storage {
+    background-color: var(--sqdc-gray);
+    color: var(--sqdc-yellow);
+    border: 1px solid var(--sqdc-light-gray);
+    padding: 0.3rem 0.5rem;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    line-height: 1;
+    min-width: 28px;
+}
+
+.btn-increase-storage:hover,
+.btn-decrease-storage:hover {
     background-color: var(--sqdc-yellow);
     color: var(--sqdc-black);
     border-color: var(--sqdc-yellow);
+    transform: scale(1.1);
+}
+
+.btn-decrease-storage:disabled,
+.btn-increase-storage:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.btn-delete-section {
+    background-color: transparent;
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+    line-height: 1;
+}
+
+.btn-delete-section:hover {
+    background-color: #ff6b6b;
+    color: white;
+    transform: scale(1.1);
 }
 
 /* Section Editor Modal */
@@ -2291,4 +2770,411 @@ main.row-resizing .row-resize-handle {
 
 .modal-close:hover {
     color: var(--sqdc-yellow);
+}
+
+/* ============================================
+   SECTION FULL EDITOR MODAL
+   ============================================ */
+
+.section-full-editor-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.98);
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+
+.section-full-editor-header {
+    background-color: var(--sqdc-black);
+    border-bottom: 3px solid var(--sqdc-yellow);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.section-full-editor-header h2 {
+    color: var(--sqdc-yellow);
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.section-full-editor-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.section-full-editor-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* Canvas Area (70%) */
+.section-full-editor-canvas {
+    flex: 0 0 70%;
+    display: flex;
+    flex-direction: column;
+    background-color: #0a0a0a;
+    border-right: 2px solid var(--sqdc-gray);
+    overflow: hidden;
+}
+
+.canvas-header {
+    padding: 1rem 1.5rem;
+    background-color: var(--sqdc-gray);
+    border-bottom: 2px solid var(--sqdc-light-gray);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.canvas-header h3 {
+    color: white;
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.canvas-info {
+    display: flex;
+    gap: 1rem;
+    color: #ccc;
+    font-size: 0.9rem;
+}
+
+.canvas-scroll-area {
+    flex: 1;
+    overflow: auto;
+    padding: 2rem;
+    min-height: 0;
+}
+
+.canvas-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-start;
+    align-content: flex-start;
+}
+
+/* Canvas grid for doors - vertical layout */
+.canvas-grid.canvas-doors {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 1rem;
+    padding-bottom: 1rem;
+}
+
+/* Canvas grid for drawers - vertical layout (max 3 rows) */
+.canvas-grid.canvas-drawers {
+    display: grid;
+    grid-template-rows: repeat(3, auto);
+    grid-auto-flow: column;
+    gap: 1rem;
+    align-content: start;
+}
+
+.canvas-footer {
+    padding: 1rem 1.5rem;
+    background-color: var(--sqdc-gray);
+    border-top: 2px solid var(--sqdc-light-gray);
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.canvas-control-btn {
+    background-color: var(--sqdc-yellow);
+    color: var(--sqdc-black);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.canvas-control-btn:hover {
+    background-color: var(--sqdc-light-yellow);
+    transform: translateY(-1px);
+}
+
+.canvas-control-btn:disabled {
+    background-color: #666;
+    color: #999;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.canvas-stats {
+    margin-left: auto;
+    color: #ccc;
+    font-size: 0.9rem;
+}
+
+/* Sidebar Product Palette (30%) */
+.section-full-editor-sidebar {
+    flex: 0 0 30%;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--sqdc-gray);
+    overflow: hidden;
+}
+
+.sidebar-header {
+    padding: 1rem 1.5rem;
+    background-color: var(--sqdc-light-gray);
+    border-bottom: 2px solid var(--sqdc-gray);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.sidebar-header h3 {
+    color: var(--sqdc-light-yellow);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.sidebar-count {
+    background-color: var(--sqdc-yellow);
+    color: var(--sqdc-black);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.sidebar-search {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--sqdc-light-gray);
+    flex-shrink: 0;
+}
+
+.sidebar-search input {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    background-color: var(--sqdc-light-gray);
+    border: 2px solid var(--sqdc-gray);
+    border-radius: 4px;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.sidebar-search input:focus {
+    outline: none;
+    border-color: var(--sqdc-yellow);
+}
+
+.sidebar-filters {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--sqdc-light-gray);
+    flex-shrink: 0;
+}
+
+.sidebar-filter-btn {
+    background-color: var(--sqdc-light-gray);
+    color: white;
+    border: 1px solid transparent;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.sidebar-filter-btn:hover {
+    background-color: var(--sqdc-gray);
+}
+
+.sidebar-filter-btn.active {
+    background-color: var(--sqdc-yellow);
+    color: var(--sqdc-black);
+    font-weight: 600;
+}
+
+.sidebar-palette {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.75rem;
+    align-content: start;
+}
+
+/* Palette product card */
+.palette-product-card {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 4px;
+    padding: 6px;
+    cursor: grab;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 10px;
+    text-align: center;
+    border: 2px solid rgba(0,0,0,0.3);
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.palette-product-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+}
+
+.palette-product-card:active {
+    cursor: grabbing;
+}
+
+.palette-product-card.dragging-from-palette {
+    opacity: 0.5;
+}
+
+.palette-product-card.already-placed {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.palette-product-card.already-placed::after {
+    content: '✓';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background-color: #4CAF50;
+    color: white;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Color by type for palette cards */
+.palette-product-card[data-type="Indica"] {
+    background-color: var(--indica-color);
+    color: #000;
+}
+
+.palette-product-card[data-type="Sativa"] {
+    background-color: var(--sativa-color);
+    color: #000;
+}
+
+.palette-product-card[data-type="Hybride"] {
+    background-color: var(--hybride-color);
+    color: #fff;
+}
+
+.palette-product-card.special-format {
+    background-color: #8B6914 !important;
+    color: #fff !important;
+}
+
+.palette-product-name {
+    font-size: inherit;
+    font-weight: 700;
+    line-height: 1.1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    margin-bottom: 2px;
+}
+
+.palette-product-thc {
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* Drop zone states in canvas */
+.canvas-grid .door.drop-zone-valid,
+.canvas-grid .drawer.drop-zone-valid,
+.canvas-grid .slot.drop-zone-valid {
+    border-color: #4CAF50;
+    border-width: 3px;
+    background-color: rgba(76, 175, 80, 0.15);
+}
+
+.canvas-grid .door.drop-zone-invalid,
+.canvas-grid .drawer.drop-zone-invalid,
+.canvas-grid .slot.drop-zone-invalid {
+    border-color: #f44336;
+    border-width: 3px;
+    background-color: rgba(244, 67, 54, 0.15);
+}
+
+/* Empty state */
+.sidebar-palette.empty::after {
+    content: 'Aucun produit disponible';
+    display: block;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 2rem;
+    grid-column: 1 / -1;
+}
+
+.canvas-grid.empty::after {
+    content: 'Aucune porte/tiroir dans cette section';
+    display: block;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 3rem;
+}
+
+/* Edit button for section headers in main view */
+.section-edit-btn {
+    background-color: transparent;
+    border: 1px solid var(--sqdc-yellow);
+    color: var(--sqdc-yellow);
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+    margin-left: 0.5rem;
+}
+
+.section-edit-btn:hover {
+    background-color: var(--sqdc-yellow);
+    color: var(--sqdc-black);
+}
+
+.section-edit-btn:focus-visible {
+    outline: 2px solid var(--sqdc-yellow);
+    outline-offset: 2px;
 }

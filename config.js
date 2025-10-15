@@ -16,12 +16,15 @@ const CONFIG = {
         CBD_CHANGES: 'sqdcCbdChanges',
         TYPE_CHANGES: 'sqdcProductTypeChanges',
         FORMAT_CHANGES: 'sqdcFormatChanges',
-        PRODUCT_ORDER: 'sqdcProductOrder',
         STORE_ID: 'sqdcStoreId',
         SECTIONS: 'sqdcSectionsConfig',
         SECTION_WIDTH_PREFIX: 'sqdcSectionWidth_',
         ROW_HEIGHT: 'sqdcRowHeight',
-        NEW_PRODUCTS: 'sqdcNewProducts'
+        NEW_PRODUCTS: 'sqdcNewProducts',
+        ADDED_PRODUCT_SKUS: 'sqdcAddedProductSkus',
+        HIDDEN_PRODUCTS: 'sqdcHiddenProducts',
+        PRODUCT_DISPLAY_MODES: 'sqdcProductDisplayModes',
+        SECTION_SLOTS: 'sqdcSectionSlots'
     },
     VALIDATION: {
         THC_MIN: 0,

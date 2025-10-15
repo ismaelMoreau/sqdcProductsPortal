@@ -20,7 +20,10 @@
                 <button class="section-config-btn" id="sectionConfigBtn" title="Configurer les sections">
                     <span class="config-icon">⚙️</span> Configurer les sections
                 </button>
-                <span class="store-label">Succursale: <span id="storeIdDisplay">77074</span></span>
+                <button class="store-id-btn" id="storeIdBtn" title="Modifier le numéro de succursale">
+                    <span class="store-label">Succursale: <span id="storeIdDisplay">77074</span></span>
+                    <span class="edit-icon">✏️</span>
+                </button>
             </div>
         </div>
     </header>
@@ -166,28 +169,58 @@
     <div class="modal-overlay" id="addProductModal" role="dialog" aria-modal="true" aria-labelledby="addProductModalTitle">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="addProductModalTitle">Ajouter un nouveau produit</h3>
+                <h3 id="addProductModalTitle">Ajouter un produit</h3>
                 <button class="modal-close" id="addProductModalCloseBtn" aria-label="Fermer">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="modal-field">
-                    <label for="addProductName">Nom du produit: <span style="color: #ff6b6b;">*</span></label>
-                    <input type="text" id="addProductName" placeholder="Ex: Blue Dream" aria-required="true">
+                    <label>Mode d'ajout:</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="addProductMode" value="existing" checked>
+                            Ajouter un produit existant
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="addProductMode" value="new">
+                            Créer un nouveau produit
+                        </label>
+                    </div>
                 </div>
+                
+                <div id="existingProductFields" class="add-product-section">
+                    <div class="modal-field">
+                        <label for="addExistingProduct">Sélectionner un produit: <span style="color: #ff6b6b;">*</span></label>
+                        <select id="addExistingProduct" size="10" style="width: 100%; padding: 0.5rem;">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="modal-field">
+                        <input type="text" id="searchExistingProduct" placeholder="Rechercher un produit..." style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;">
+                    </div>
+                </div>
+                
+                <div id="newProductFields" class="add-product-section" style="display: none;">
+                    <div class="modal-field">
+                        <label for="addProductName">Nom du produit: <span style="color: #ff6b6b;">*</span></label>
+                        <input type="text" id="addProductName" placeholder="Ex: Blue Dream" aria-required="true">
+                    </div>
 
                 <div class="modal-field">
-                    <label for="addProductBrand">Marque: <span style="color: #ff6b6b;">*</span></label>
-                    <input type="text" id="addProductBrand" placeholder="Ex: Aurora" aria-required="true">
+                    <label for="addProductBrand">Marque:</label>
+                    <input type="text" id="addProductBrand" placeholder="Ex: Aurora (optionnel)" aria-required="false">
                 </div>
 
                 <div class="modal-field">
                     <label for="addProductSku">SKU: <span style="color: #ff6b6b;">*</span></label>
-                    <input type="text" id="addProductSku" placeholder="Ex: 12345678" aria-required="true">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="addProductSku" placeholder="Ex: 12345678" aria-required="true" style="flex: 1;">
+                        <button type="button" id="generateSkuBtn" class="modal-btn" style="padding: 0.5rem 1rem; white-space: nowrap;" title="Générer un SKU automatiquement">🎲 Auto</button>
+                    </div>
                 </div>
 
                 <div class="modal-field">
-                    <label for="addProductSection">Section: <span style="color: #ff6b6b;">*</span></label>
-                    <select id="addProductSection" aria-required="true">
+                    <label for="addProductType">Type de souche: <span style="color: #ff6b6b;">*</span></label>
+                    <select id="addProductType" aria-required="true">
                         <!-- Populated dynamically -->
                     </select>
                 </div>
@@ -207,6 +240,14 @@
                 <div class="modal-field">
                     <label for="addProductCbd">CBD %:</label>
                     <input type="number" id="addProductCbd" step="0.1" min="0" max="100" placeholder="Ex: 0.5 (optionnel)" aria-required="false">
+                </div>
+                </div>
+                
+                <div class="modal-field">
+                    <label for="addProductTargetSection">Ajouter à la section: <span style="color: #ff6b6b;">*</span></label>
+                    <select id="addProductTargetSection" aria-required="true">
+                        <!-- Populated dynamically -->
+                    </select>
                 </div>
             </div>
             <div class="modal-footer">
@@ -256,11 +297,32 @@
         </div>
     </div>
 
+    <!-- Store ID Edit Modal -->
+    <div class="modal-overlay" id="storeIdModal" role="dialog" aria-modal="true" aria-labelledby="storeIdModalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="storeIdModalTitle">Modifier le numéro de succursale</h3>
+                <button class="modal-close" id="storeIdModalCloseBtn" aria-label="Fermer">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-field">
+                    <label for="storeIdInput">Numéro de succursale: <span style="color: #ff6b6b;">*</span></label>
+                    <input type="text" id="storeIdInput" placeholder="Ex: 77074" maxlength="10" aria-required="true">
+                    <p class="help-text">💡 Valeur par défaut: 77074</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-cancel" id="storeIdCancelBtn" aria-label="Annuler">Annuler</button>
+                <button class="modal-btn modal-btn-save" id="storeIdSaveBtn" aria-label="Sauvegarder">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Section Editor Modal (nested) -->
     <div class="modal-overlay" id="sectionEditorModal" role="dialog" aria-modal="true">
         <div class="modal-content section-editor-modal">
             <div class="modal-header">
-                <h3 id="sectionEditorTitle">Éditer la section</h3>
+                <h3 id="sectionEditorTitle">Nouvelle section</h3>
                 <button class="modal-close" id="sectionEditorCloseBtn">&times;</button>
             </div>
             
@@ -340,6 +402,71 @@
                     🗑️ Supprimer
                 </button>
                 <button class="modal-btn modal-btn-save" id="sectionEditorSaveBtn">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Full Editor Modal -->
+    <div class="modal-overlay" id="sectionFullEditorModal" role="dialog" aria-modal="true" aria-labelledby="sectionFullEditorTitle">
+        <div class="section-full-editor-modal">
+            <!-- Header -->
+            <div class="section-full-editor-header">
+                <h2 id="sectionFullEditorTitle">Éditeur de section</h2>
+                <div class="section-full-editor-actions">
+                    <button class="modal-btn modal-btn-cancel" id="sectionFullEditorCancelBtn">Annuler</button>
+                    <button class="modal-btn modal-btn-save" id="sectionFullEditorSaveBtn">Enregistrer</button>
+                    <button class="modal-close" id="sectionFullEditorCloseBtn" aria-label="Fermer">&times;</button>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="section-full-editor-content">
+                <!-- Canvas Area (70%) -->
+                <div class="section-full-editor-canvas">
+                    <div class="canvas-header">
+                        <h3 id="canvasSectionName">Section</h3>
+                        <div class="canvas-info">
+                            <span id="canvasStorageType">Type</span>
+                            <span id="canvasStorageCount">0 unités</span>
+                        </div>
+                    </div>
+                    <div class="canvas-scroll-area">
+                        <div id="sectionFullEditorCanvasGrid" class="canvas-grid">
+                            <!-- Doors/Drawers rendered here dynamically -->
+                        </div>
+                    </div>
+                    <!-- Footer Controls -->
+                    <div class="canvas-footer">
+                        <button class="canvas-control-btn" id="addStorageBtn" title="Ajouter une porte/tiroir">
+                            <span>➕</span> Ajouter
+                        </button>
+                        <button class="canvas-control-btn" id="removeStorageBtn" title="Retirer la dernière porte/tiroir">
+                            <span>➖</span> Retirer
+                        </button>
+                        <div class="canvas-stats">
+                            <span id="canvasProductCount">0 produits placés</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar Product Palette (30%) -->
+                <div class="section-full-editor-sidebar">
+                    <div class="sidebar-header">
+                        <h3>Produits disponibles</h3>
+                        <span class="sidebar-count" id="sidebarProductCount">0 produits</span>
+                    </div>
+                    <div class="sidebar-search">
+                        <input type="text" id="sidebarSearchInput" placeholder="Rechercher un produit..." />
+                    </div>
+                    <div class="sidebar-filters">
+                        <button class="sidebar-filter-btn active" data-filter="all">Tous</button>
+                        <button class="sidebar-filter-btn" data-filter="available">Disponibles</button>
+                        <button class="sidebar-filter-btn" data-filter="placed">Placés</button>
+                    </div>
+                    <div id="sectionFullEditorPalette" class="sidebar-palette">
+                        <!-- Product cards rendered here dynamically -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
