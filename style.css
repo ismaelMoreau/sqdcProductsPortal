@@ -343,6 +343,8 @@ main {
     flex-shrink: 0;
     flex-grow: 0;
     position: relative;
+    container-type: inline-size;
+    container-name: section;
 }
 
 .strain-section.hidden {
@@ -476,6 +478,37 @@ main.row-resizing .row-resize-handle {
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 2px solid var(--sqdc-yellow);
+    flex-wrap: wrap;
+}
+
+/* Section statistics */
+.section-stats {
+    display: flex;
+    gap: 0.75rem;
+    margin-left: auto;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.section-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+}
+
+.section-stat .stat-icon {
+    font-size: 1rem;
+}
+
+.section-stat .stat-value {
+    color: var(--sqdc-yellow);
+    font-weight: bold;
+    min-width: 1.5rem;
+    text-align: center;
 }
 
 /* Section drawer control */
@@ -706,10 +739,10 @@ main.row-resizing .row-resize-handle {
     display: grid;
     grid-template-rows: repeat(3, auto);
     grid-auto-flow: column;
-    grid-auto-columns: 260px;
-    gap: 12px;
-    column-gap: 16px;
-    row-gap: 12px;
+    grid-auto-columns: 225px;
+    gap: 4px;
+    column-gap: 4px;
+    row-gap: 4px;
     padding: 16px 12px;
     background: #0d0d0d;
     border-radius: 8px;
@@ -722,10 +755,8 @@ main.row-resizing .row-resize-handle {
 /* Drawer container */
 .drawer {
     position: relative;
-    width: 100%;
-    min-width: 260px;
-    min-height: 100px;
-    max-width: 260px;
+    width: clamp(220px, 18%, 300px);
+    min-height: 110px;
     background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
     border: 2px solid #FFD700;
     border-radius: 8px;
@@ -735,8 +766,31 @@ main.row-resizing .row-resize-handle {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 10px 8px 8px 8px;
+    padding: 8px;
     flex-shrink: 0;
+    overflow: visible;
+}
+
+/* Scale drawers when section is wider */
+@container section (min-width: 300px) {
+    .drawer {
+        width: clamp(240px, 20%, 320px);
+        padding: 10px;
+    }
+}
+
+@container section (min-width: 400px) {
+    .drawer {
+        width: clamp(260px, 22%, 350px);
+        padding: 12px;
+    }
+}
+
+@container section (min-width: 500px) {
+    .drawer {
+        width: clamp(280px, 25%, 380px);
+        padding: 14px;
+    }
 }
 
 .drawer:hover {
@@ -767,12 +821,13 @@ main.row-resizing .row-resize-handle {
 .drawer-labels {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
     padding: 4px;
     flex: 1;
+    overflow: visible;
 }
 
 /* Slot styling */
@@ -781,12 +836,11 @@ main.row-resizing .row-resize-handle {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
     padding: 2px;
     border-radius: 4px;
-    min-height: 90px;
-    min-width: 110px;
     transition: all 0.2s ease;
+    overflow: visible;
 }
 
 .slot.empty {
@@ -795,9 +849,7 @@ main.row-resizing .row-resize-handle {
 }
 
 .slot.expanded-occupied {
-    border: 2px dashed rgba(153, 153, 153, 0.3);
-    background: transparent;
-    pointer-events: none; /* Prevent interaction with occupied slot */
+    display: none; /* Hide occupied slots - they're covered by expanded card above */
 }
 
 .slot.drag-over {
@@ -826,6 +878,21 @@ main.row-resizing .row-resize-handle {
     justify-content: center;
 }
 
+/* Override for slots with expanded cards inside .door-labels grid */
+.door-labels .slot {
+    height: 100%; /* Fill the grid cell */
+    min-height: 0; /* Allow grid to control minimum */
+}
+
+/* Slots containing expanded cards should span grid rows */
+.door-labels .slot:has(.door-product-card.expand-height) {
+    grid-row: span 2;
+}
+
+.door-labels .slot:has(.door-product-card.expand-height-2) {
+    grid-row: span 3;
+}
+
 .drawer-slot {
     flex-direction: row;
     gap: 6px;
@@ -844,8 +911,11 @@ main.row-resizing .row-resize-handle {
 }
 
 .drawer-product-card {
-    width: 106px;
-    height: 106px;
+    flex: 1 1 0;
+    min-width: 95px;
+    min-height: 95px;
+    max-width: 130px;
+    aspect-ratio: 1;
     border-radius: 3px;
     padding: 4px;
     transition: all 0.2s ease;
@@ -856,13 +926,50 @@ main.row-resizing .row-resize-handle {
     justify-content: center;
     align-items: center;
     overflow: visible;
-    font-size: 11px;
+    font-size: clamp(9px, 0.75vw, 11px);
     text-align: center;
     border: 1px solid rgba(0,0,0,0.2);
     font-weight: 500;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     position: relative;
     flex-shrink: 0;
+}
+
+/* Scale drawer cards when section is wider */
+@container section (min-width: 300px) {
+    .drawer-product-card {
+        min-width: 105px;
+        min-height: 105px;
+        max-width: 145px;
+        padding: 5px;
+        font-size: clamp(10px, 0.85vw, 12px);
+    }
+}
+
+@container section (min-width: 400px) {
+    .drawer-product-card {
+        min-width: 115px;
+        min-height: 115px;
+        max-width: 160px;
+        padding: 6px;
+        font-size: clamp(11px, 0.95vw, 13px);
+    }
+}
+
+@container section (min-width: 500px) {
+    .drawer-product-card {
+        min-width: 125px;
+        min-height: 125px;
+        max-width: 175px;
+        padding: 8px;
+        font-size: clamp(12px, 1vw, 14px);
+    }
+}
+
+/* Prevent native title tooltip from showing */
+.drawer-product-card[title],
+.door-product-card[title] {
+    cursor: grab;
 }
 
 .drawer-product-card:active {
@@ -905,7 +1012,7 @@ main.row-resizing .row-resize-handle {
 .drawer-product-card:hover {
     transform: scale(1.05) translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-    z-index: 10;
+    z-index: 10000;
     font-size: 12px;
 }
 
@@ -913,7 +1020,7 @@ main.row-resizing .row-resize-handle {
     outline: 2px solid var(--sqdc-yellow);
     outline-offset: 1px;
     transform: scale(1.05);
-    z-index: 10;
+    z-index: 10000;
 }
 
 .drawer-product-name {
@@ -950,18 +1057,16 @@ main.row-resizing .row-resize-handle {
 
 /* Standalone cards (without drawer) */
 .drawer-product-card.standalone {
-    width: 80px;
-    height: 80px;
-    max-width: 80px;
-    min-width: 80px;
+    width: 75px;
+    height: 75px;
     border: 2px solid;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 6px;
+    gap: 3px;
+    padding: 5px;
     font-size: 8px;
     text-align: center;
     border-radius: 6px;
@@ -1011,15 +1116,29 @@ main.row-resizing .row-resize-handle {
    DOOR SYSTEM - For 3.5g and 28g sections
    ============================================ */
 
+/* Custom fast tooltip for product cards - DISABLED: Using JavaScript tooltip instead */
+.door-product-card::after,
+.drawer-product-card::after {
+    display: none !important;
+}
+
+.door-product-card:hover::after,
+.drawer-product-card:hover::after {
+    opacity: 1;
+    transition-delay: 0.1s;
+}
+
+/* Hide native tooltip */
+.door-product-card,
+.drawer-product-card {
+    position: relative;
+}
+
 /* Door container - vertical layout with 6 labels stacked */
 .door {
     position: relative;
-    width: 140px;
-    min-width: 140px;
-    max-width: 140px;
-    height: 620px;
-    min-height: 620px;
-    max-height: 620px;
+    width: clamp(120px, 12%, 180px);
+    height: 100%;
     background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
     border: 2px solid #4CAF50;
     border-radius: 8px;
@@ -1029,10 +1148,33 @@ main.row-resizing .row-resize-handle {
     display: inline-flex;
     flex-direction: column;
     justify-content: flex-start;
-    padding: 8px;
+    padding: 6px;
     flex-shrink: 0;
     flex-grow: 0;
     vertical-align: top;
+    overflow: visible;
+}
+
+/* Scale doors when section is wider */
+@container section (min-width: 300px) {
+    .door {
+        width: clamp(140px, 15%, 200px);
+        padding: 8px;
+    }
+}
+
+@container section (min-width: 400px) {
+    .door {
+        width: clamp(160px, 18%, 220px);
+        padding: 10px;
+    }
+}
+
+@container section (min-width: 500px) {
+    .door {
+        width: clamp(180px, 20%, 240px);
+        padding: 12px;
+    }
 }
 
 .door:hover {
@@ -1121,19 +1263,21 @@ main.row-resizing .row-resize-handle {
 /* Door labels - 6 cards stacked vertically */
 .door-labels {
     display: grid;
-    grid-template-rows: repeat(6, 90px); /* 6 fixed rows of 90px each */
-    gap: 6px;
+    grid-template-rows: repeat(6, minmax(120px, 1fr));
+    grid-auto-rows: minmax(120px, 1fr);
+    gap: 2px;
     width: 100%;
     padding: 4px;
     flex: 1;
-    justify-items: center;
-    align-items: start; /* Align to top of grid cell */
+    justify-items: stretch;
+    align-items: stretch;
+    overflow: visible;
 }
 
 /* Door product card - individual label on door */
 .door-product-card {
-    width: 106px;
-    height: 86px;
+    width: 100%;
+    height: 100%;
     border-radius: 3px;
     padding: 4px;
     transition: all 0.2s ease;
@@ -1144,7 +1288,7 @@ main.row-resizing .row-resize-handle {
     justify-content: center;
     align-items: center;
     overflow: visible;
-    font-size: 11px;
+    font-size: clamp(9px, 0.75vw, 11px);
     text-align: center;
     border: 1px solid rgba(0,0,0,0.2);
     font-weight: 500;
@@ -1152,6 +1296,29 @@ main.row-resizing .row-resize-handle {
     pointer-events: auto;
     position: relative;
     flex-shrink: 0;
+    z-index: 1;
+}
+
+/* Scale door cards when section is wider */
+@container section (min-width: 300px) {
+    .door-product-card {
+        font-size: clamp(10px, 0.85vw, 12px);
+        padding: 5px;
+    }
+}
+
+@container section (min-width: 400px) {
+    .door-product-card {
+        font-size: clamp(11px, 0.95vw, 13px);
+        padding: 6px;
+    }
+}
+
+@container section (min-width: 500px) {
+    .door-product-card {
+        font-size: clamp(12px, 1vw, 14px);
+        padding: 8px;
+    }
 }
 
 /* Prevent child elements from blocking drag events */
@@ -1194,7 +1361,7 @@ main.row-resizing .row-resize-handle {
 .door-product-card:hover {
     transform: scale(1.05) translateX(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-    z-index: 10;
+    z-index: 10000;
     font-size: 12px;
 }
 
@@ -1202,7 +1369,7 @@ main.row-resizing .row-resize-handle {
     outline: 2px solid var(--sqdc-yellow);
     outline-offset: 1px;
     transform: scale(1.05);
-    z-index: 10;
+    z-index: 10000;
 }
 
 .door-product-name {
@@ -1239,18 +1406,16 @@ main.row-resizing .row-resize-handle {
 
 /* Standalone door cards (without door container) */
 .door-product-card.standalone {
-    width: 80px;
-    height: 80px;
-    max-width: 80px;
-    min-width: 80px;
+    width: 75px;
+    height: 75px;
     border: 2px solid;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 6px;
+    gap: 3px;
+    padding: 5px;
     font-size: 8px;
     text-align: center;
     border-radius: 6px;
@@ -1332,12 +1497,10 @@ main.row-resizing .row-resize-handle {
    Expanded height cards - Double height for doors only
    ============================================ */
 .door-product-card.expand-height {
-    grid-row: span 2;
-    height: 186px; /* 2 rows of 90px + 1 gap of 6px */
-    width: 106px;
-    font-size: 13px;
-    padding: 8px;
-    gap: 6px;
+    width: 100%;
+    font-size: clamp(11px, 0.85vw, 13px);
+    padding: 6px;
+    gap: 4px;
 }
 
 .door-product-card.expand-height .door-product-name {
@@ -1374,12 +1537,10 @@ main.row-resizing .row-resize-handle {
    Expanded height cards - Triple height (3 slots) for doors only
    ============================================ */
 .door-product-card.expand-height-2 {
-    grid-row: span 3;
-    height: 282px; /* 3 rows of 90px + 2 gaps of 6px */
-    width: 106px;
-    font-size: 14px;
-    padding: 10px;
-    gap: 8px;
+    width: 100%;
+    font-size: clamp(12px, 0.9vw, 14px);
+    padding: 8px;
+    gap: 6px;
 }
 
 .door-product-card.expand-height-2 .door-product-name {
@@ -1680,7 +1841,7 @@ main.row-resizing .row-resize-handle {
 .product-card:hover {
     transform: scale(1.1);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-    z-index: 10;
+    z-index: 10000;
     font-size: 12px;
 }
 
@@ -1688,7 +1849,7 @@ main.row-resizing .row-resize-handle {
     outline: 3px solid var(--sqdc-yellow);
     outline-offset: 2px;
     transform: scale(1.1);
-    z-index: 10;
+    z-index: 10000;
     font-size: 9px;
 }
 
@@ -2371,12 +2532,14 @@ main.row-resizing .row-resize-handle {
 
 /* Wall Navigation */
 .wall-navigation {
-    background-color: var(--sqdc-gray);
-    padding: 0.75rem 2rem;
     display: flex;
+    gap: 1.5rem;
     justify-content: center;
-    gap: 1rem;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: var(--sqdc-gray);
     border-bottom: 2px solid var(--sqdc-light-gray);
+    flex-wrap: wrap;
 }
 
 .wall-nav-btn {
@@ -2403,6 +2566,49 @@ main.row-resizing .row-resize-handle {
     background-color: var(--sqdc-yellow);
     color: var(--sqdc-black);
     border-color: var(--sqdc-yellow);
+}
+
+/* Wall Statistics Panel */
+.wall-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    border: 1px solid var(--sqdc-light-gray);
+}
+
+.wall-stats-row {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.stat-icon {
+    font-size: 1.1rem;
+}
+
+.stat-label {
+    color: #ccc;
+    font-weight: 500;
+}
+
+.stat-value {
+    color: var(--sqdc-yellow);
+    font-weight: bold;
+    font-size: 1rem;
+    min-width: 2rem;
+    text-align: right;
 }
 
 /* Section Manager Modal */
@@ -3153,28 +3359,33 @@ main.row-resizing .row-resize-handle {
     padding: 3rem;
 }
 
-/* Edit button for section headers in main view */
-.section-edit-btn {
+/* Zoom button for section headers */
+.section-zoom-btn {
     background-color: transparent;
     border: 1px solid var(--sqdc-yellow);
     color: var(--sqdc-yellow);
-    padding: 0.3rem 0.8rem;
+    padding: 0.3rem 0.6rem;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 1rem;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    justify-content: center;
     transition: all 0.2s ease;
     margin-left: 0.5rem;
+    min-width: 32px;
+    height: 28px;
 }
 
-.section-edit-btn:hover {
+.section-zoom-btn:hover {
     background-color: var(--sqdc-yellow);
     color: var(--sqdc-black);
+    transform: scale(1.05);
 }
 
-.section-edit-btn:focus-visible {
+.section-zoom-btn:focus-visible {
     outline: 2px solid var(--sqdc-yellow);
     outline-offset: 2px;
 }
+
+/* Edit button for section headers - REMOVED */

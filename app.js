@@ -3,20 +3,97 @@ let allProducts = [];
 let filteredProducts = [];
 let activeFilters = new Set([CONFIG.TYPES.INDICA, CONFIG.TYPES.SATIVA, CONFIG.TYPES.HYBRIDE, CONFIG.TYPES.ALL]);
 let searchQuery = '';
-let sortBy = 'name';
+let sortBy = 'name'; // Default sort (not used in current UI)
 let productTypeChanges = {}; // Store product type changes by SKU
 let productDisplayModes = {}; // Store product display modes by SKU: { sku: { split: true/false, expandHeight: 0|1|2 } }
 let sectionSlots = {}; // Store slot-based layout: { sectionId: { slots: [{index, products: [sku1, sku2]}], slotType: 'door'|'drawer' } }
-let dragState = {
-    draggedElement: null,
-    draggedSku: null,
-    sourceGridId: null,
-    sourceStorageIndex: null,
-    sourceSlotIndex: null,
-    dropTarget: null,
-    dropStorageIndex: null,
-    dropSlotIndex: null
-};
+// ============================================
+// DragDropManager Class
+// ============================================
+
+class DragDropManager {
+    constructor() {
+        this.reset();
+    }
+
+    reset() {
+        this.draggedElement = null;
+        this.draggedSku = null;
+        this.sourceGridId = null;
+        this.sourceStorageIndex = null;
+        this.sourceSlotIndex = null;
+        this.dropTarget = null;
+        this.dropStorageIndex = null;
+        this.dropSlotIndex = null;
+    }
+
+    start(element, sku, gridId, storageIndex, slotIndex) {
+        this.draggedElement = element;
+        this.draggedSku = sku;
+        this.sourceGridId = gridId;
+        this.sourceStorageIndex = storageIndex;
+        this.sourceSlotIndex = slotIndex;
+        
+        setTimeout(() => element.classList.add('dragging'), 0);
+        console.log(`Drag start: SKU ${sku} from storage ${storageIndex} slot ${slotIndex}`);
+    }
+
+    setDropTarget(storageIndex, slotIndex) {
+        this.dropStorageIndex = storageIndex;
+        this.dropSlotIndex = slotIndex;
+    }
+
+    canDrop() {
+        return this.sourceGridId && 
+               this.sourceStorageIndex !== null && 
+               this.sourceSlotIndex !== null &&
+               this.dropStorageIndex !== null && 
+               this.dropSlotIndex !== null &&
+               this.draggedSku;
+    }
+
+    isDifferentSlot() {
+        return this.sourceStorageIndex !== this.dropStorageIndex || 
+               this.sourceSlotIndex !== this.dropSlotIndex;
+    }
+
+    performMove() {
+        if (!this.canDrop() || !this.isDifferentSlot()) {
+            return false;
+        }
+
+        const success = moveProduct(
+            this.sourceGridId,
+            this.sourceStorageIndex,
+            this.sourceSlotIndex,
+            this.sourceGridId,
+            this.dropStorageIndex,
+            this.dropSlotIndex,
+            this.draggedSku
+        );
+
+        return success;
+    }
+
+    cleanup() {
+        if (this.draggedElement) {
+            this.draggedElement.classList.remove('dragging');
+        }
+
+        // Remove visual feedback
+        document.querySelectorAll('.product-card, .door-product-card, .drawer-product-card').forEach(c => {
+            c.classList.remove('drag-over');
+        });
+        document.querySelectorAll('.slot, .door, .drawer').forEach(s => {
+            s.classList.remove('drag-over', 'drag-invalid');
+        });
+        document.querySelectorAll('.products-grid').forEach(g => g.classList.remove('drag-active'));
+
+        this.reset();
+    }
+}
+
+const dragManager = new DragDropManager();
 
 // Section manager state
 let sectionsConfig = [];
@@ -153,8 +230,6 @@ function saveStoreId(id) {
     }
 }
 
-// Migration removed - using dynamic sections only
-
 // Load products
 async function loadProducts() {
     // Load from embedded data (products-data.js)
@@ -175,7 +250,6 @@ async function loadProducts() {
 }
 
 function applyProductTypeChanges() {
-    // Apply saved type changes to products
     allProducts.forEach(product => {
         if (productTypeChanges[product.sku]) {
             product.type = productTypeChanges[product.sku];
@@ -220,29 +294,24 @@ function filterProducts() {
     updateCounts();
 }
 
-// Sort products
+// Sort products (currently defaults to name sort, not exposed in UI)
 function sortProducts() {
-    switch(sortBy) {
-        case 'name':
-            filteredProducts.sort((a, b) => a.name.localeCompare(b.name));
-            break;
-        case 'brand':
-            filteredProducts.sort((a, b) => a.brand.localeCompare(b.brand));
-            break;
-        case 'thc-desc':
-            filteredProducts.sort((a, b) => {
-                const aThc = parseFloat(a.manualThc) || a.thcMax;
-                const bThc = parseFloat(b.manualThc) || b.thcMax;
-                return bThc - aThc;
-            });
-            break;
-        case 'thc-asc':
-            filteredProducts.sort((a, b) => {
-                const aThc = parseFloat(a.manualThc) || a.thcMin;
-                const bThc = parseFloat(b.manualThc) || b.thcMin;
-                return aThc - bThc;
-            });
-            break;
+    if (!sortBy || sortBy === 'name') {
+        filteredProducts.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === 'brand') {
+        filteredProducts.sort((a, b) => a.brand.localeCompare(b.brand));
+    } else if (sortBy === 'thc-desc') {
+        filteredProducts.sort((a, b) => {
+            const aThc = parseFloat(a.manualThc) || a.thcMax;
+            const bThc = parseFloat(b.manualThc) || b.thcMax;
+            return bThc - aThc;
+        });
+    } else if (sortBy === 'thc-asc') {
+        filteredProducts.sort((a, b) => {
+            const aThc = parseFloat(a.manualThc) || a.thcMin;
+            const bThc = parseFloat(b.manualThc) || b.thcMin;
+            return aThc - bThc;
+        });
     }
 }
 
@@ -340,359 +409,80 @@ function setupScrollArrows(grid) {
     updateScrollArrows(grid);
 }
 
-// Display configuration moved to config.js - access via CONFIG.DRAWER_CONFIG and CONFIG.DOOR_CONFIG
+// ============================================
+// Product Card Creation Functions - Unified
+// ============================================
 
-
-
-// Helper function to get section name from grid ID
-function getSectionFromGridId(gridId) {
-    if (gridId.includes('indica')) return 'indica';
-    if (gridId.includes('sativa')) return 'sativa';
-    if (gridId.includes('hybride')) return 'hybride';
-    if (gridId.includes('oz28')) return 'oz28';
-    return 'indica'; // fallback
+// Unified function to create product cards for all storage types
+function createProductCardElement(product, cardType = 'drawer', standalone = false) {
+    const thcValue = product.manualThc || product.thcMax;
+    const cbdValue = product.manualCbd || product.cbd || 0;
+    const showCbd = cbdValue > 0;
+    const isVisible = productMatchesFilters(product);
+    const displayMode = getProductDisplayMode(product.sku);
+    
+    const card = document.createElement('div');
+    
+    // Build class list
+    let cardClasses = cardType === 'door' ? 'door-product-card' : 'drawer-product-card';
+    if (standalone) cardClasses += ' standalone';
+    if (!isVisible) cardClasses += ' card-hidden';
+    if (displayMode.split) cardClasses += ' split';
+    if (cardType === 'door' && displayMode.expandHeight === 1) cardClasses += ' expand-height';
+    if (cardType === 'door' && displayMode.expandHeight === 2) cardClasses += ' expand-height-2';
+    if (isSpecialFormat(product.format)) cardClasses += ' special-format';
+    
+    card.className = cardClasses;
+    card.dataset.type = product.type;
+    card.dataset.sku = product.sku;
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('draggable', 'true');
+    card.setAttribute('aria-label', `${product.name}, ${thcValue}% THC, cliquez pour modifier`);
+    card.setAttribute('data-tooltip', product.name);
+    
+    // Build HTML content
+    const nameClass = cardType === 'door' ? 'door-product-name' : 'drawer-product-name';
+    const thcClass = cardType === 'door' ? 'door-product-thc' : 'drawer-product-thc';
+    const thcValueClass = cardType === 'door' ? 'door-thc-value' : 'drawer-thc-value';
+    const cbdClass = cardType === 'door' ? 'door-product-cbd' : 'drawer-product-cbd';
+    
+    let html = `
+        <button class="product-remove-btn" data-sku="${product.sku}" title="Retirer de cette section" aria-label="Retirer ${product.name} de cette section">&times;</button>
+        <button class="product-split-btn ${displayMode.split ? 'active' : ''}" data-sku="${product.sku}" title="Diviser en demi-largeur" aria-label="Diviser ${product.name} en demi-largeur">⇔</button>`;
+    
+    if (cardType === 'door' && !standalone) {
+        html += `<button class="product-expand-btn ${displayMode.expandHeight > 0 ? 'active' : ''}" data-sku="${product.sku}" title="Agrandir en hauteur (${displayMode.expandHeight}/2)" aria-label="Agrandir ${product.name} en hauteur">↕${displayMode.expandHeight > 0 ? displayMode.expandHeight : ''}</button>`;
+    }
+    
+    html += `
+        <div class="${nameClass}">${product.name}</div>
+        <div class="${thcClass}">
+            <div class="${thcValueClass}">${thcValue}%</div>
+        </div>
+        ${showCbd ? `<div class="${cbdClass}">${cbdValue}%</div>` : ''}`;
+    
+    if (cardType === 'door' && displayMode.expandHeight > 0) {
+        html += `
+            <div class="door-product-brand">${product.brand}</div>
+            <div class="door-product-format">${product.format}</div>`;
+    }
+    
+    card.innerHTML = html;
+    return card;
 }
 
-// Helper function: Create a standalone card (label without drawer)
+// Legacy compatibility wrappers
 function createStandaloneCard(product) {
-    const thcValue = product.manualThc || product.thcMax;
-    const cbdValue = product.manualCbd || product.cbd || 0;
-    const showCbd = cbdValue > 0;
-    
-    // Check if product matches current filters
-    const isVisible = productMatchesFilters(product);
-    
-    const card = document.createElement('div');
-    
-    // Get display mode for this product
-    const displayMode = getProductDisplayMode(product.sku);
-    
-    // Build class list
-    let cardClasses = 'drawer-product-card standalone';
-    if (!isVisible) cardClasses += ' card-hidden';
-    if (displayMode.split) cardClasses += ' split';
-    if (isSpecialFormat(product.format)) cardClasses += ' special-format';
-    
-    card.className = cardClasses;
-    card.dataset.type = product.type;
-    card.dataset.sku = product.sku;
-    card.setAttribute('role', 'button');
-    card.setAttribute('tabindex', '0');
-    card.setAttribute('draggable', 'true'); // Now draggable for reordering
-    card.setAttribute('aria-label', `${product.name}, ${thcValue}% THC, cliquez pour modifier`);
-    
-    card.innerHTML = `
-        <button class="product-remove-btn" data-sku="${product.sku}" title="Retirer de cette section" aria-label="Retirer ${product.name} de cette section">&times;</button>
-        <button class="product-split-btn ${displayMode.split ? 'active' : ''}" data-sku="${product.sku}" title="Diviser en demi-largeur" aria-label="Diviser ${product.name} en demi-largeur">⇔</button>
-        <div class="drawer-product-name">${product.name}</div>
-        <div class="drawer-product-thc">
-            <div class="drawer-thc-value">${thcValue}%</div>
-        </div>
-        ${showCbd ? `<div class="drawer-product-cbd">${cbdValue}%</div>` : ''}
-    `;
-    
-    // Drag handlers for reordering
-    card.addEventListener('dragstart', handleDragStart);
-    card.addEventListener('dragover', handleDragOver);
-    card.addEventListener('drop', handleDrop);
-    card.addEventListener('dragend', handleDragEnd);
-    
-    // Click and keyboard handlers managed by global event delegation in setupEventListeners
-    
-    return card;
+    return createProductCardElement(product, 'drawer', true);
 }
 
-// Helper function: Create a door product card (for doors)
 function createDoorProductCard(product) {
-    const thcValue = product.manualThc || product.thcMax;
-    const cbdValue = product.manualCbd || product.cbd || 0;
-    const showCbd = cbdValue > 0;
-    
-    // Check if product matches current filters
-    const isVisible = productMatchesFilters(product);
-    
-    const card = document.createElement('div');
-    
-    // Get display mode for this product
-    const displayMode = getProductDisplayMode(product.sku);
-    
-    // Build class list
-    let cardClasses = 'door-product-card';
-    if (!isVisible) cardClasses += ' card-hidden';
-    if (displayMode.split) cardClasses += ' split';
-    if (displayMode.expandHeight === 1) cardClasses += ' expand-height';
-    if (displayMode.expandHeight === 2) cardClasses += ' expand-height-2';
-    if (isSpecialFormat(product.format)) cardClasses += ' special-format';
-    
-    card.className = cardClasses;
-    card.dataset.type = product.type;
-    card.dataset.sku = product.sku;
-    card.setAttribute('role', 'button');
-    card.setAttribute('tabindex', '0');
-    card.setAttribute('draggable', 'true'); // Now draggable for reordering
-    card.setAttribute('aria-label', `${product.name}, ${thcValue}% THC, cliquez pour modifier`);
-    
-    card.innerHTML = `
-        <button class="product-remove-btn" data-sku="${product.sku}" title="Retirer de cette section" aria-label="Retirer ${product.name} de cette section">&times;</button>
-        <button class="product-split-btn ${displayMode.split ? 'active' : ''}" data-sku="${product.sku}" title="Diviser en demi-largeur" aria-label="Diviser ${product.name} en demi-largeur">⇔</button>
-        <button class="product-expand-btn ${displayMode.expandHeight > 0 ? 'active' : ''}" data-sku="${product.sku}" title="Agrandir en hauteur (${displayMode.expandHeight}/2)" aria-label="Agrandir ${product.name} en hauteur">↕${displayMode.expandHeight > 0 ? displayMode.expandHeight : ''}</button>
-        <div class="door-product-name">${product.name}</div>
-        <div class="door-product-thc">
-            <div class="door-thc-value">${thcValue}%</div>
-        </div>
-        ${showCbd ? `<div class="door-product-cbd">${cbdValue}%</div>` : ''}
-        ${displayMode.expandHeight > 0 ? `<div class="door-product-brand">${product.brand}</div>` : ''}
-        ${displayMode.expandHeight > 0 ? `<div class="door-product-format">${product.format}</div>` : ''}
-    `;
-    
-    // Drag handlers managed by global event delegation in initializeDragAndDrop
-    // Click and keyboard handlers managed by global event delegation in setupEventListeners
-    
-    return card;
+    return createProductCardElement(product, 'door', false);
 }
 
-// Helper function: Create a standalone door card (label without door)
 function createStandaloneDoorCard(product) {
-    const thcValue = product.manualThc || product.thcMax;
-    const cbdValue = product.manualCbd || product.cbd || 0;
-    const showCbd = cbdValue > 0;
-    
-    // Check if product matches current filters
-    const isVisible = productMatchesFilters(product);
-    
-    const card = document.createElement('div');
-    
-    // Get display mode for this product
-    const displayMode = getProductDisplayMode(product.sku);
-    
-    // Build class list
-    let cardClasses = 'door-product-card standalone';
-    if (!isVisible) cardClasses += ' card-hidden';
-    if (displayMode.split) cardClasses += ' split';
-    if (isSpecialFormat(product.format)) cardClasses += ' special-format';
-    
-    card.className = cardClasses;
-    card.dataset.type = product.type;
-    card.dataset.sku = product.sku;
-    card.setAttribute('role', 'button');
-    card.setAttribute('tabindex', '0');
-    card.setAttribute('draggable', 'true'); // Now draggable for reordering
-    card.setAttribute('aria-label', `${product.name}, ${thcValue}% THC, cliquez pour modifier`);
-    
-    card.innerHTML = `
-        <button class="product-remove-btn" data-sku="${product.sku}" title="Retirer de cette section" aria-label="Retirer ${product.name} de cette section">&times;</button>
-        <button class="product-split-btn ${displayMode.split ? 'active' : ''}" data-sku="${product.sku}" title="Diviser en demi-largeur" aria-label="Diviser ${product.name} en demi-largeur">⇔</button>
-        <div class="door-product-name">${product.name}</div>
-        <div class="door-product-thc">
-            <div class="door-thc-value">${thcValue}%</div>
-        </div>
-        ${showCbd ? `<div class="door-product-cbd">${cbdValue}%</div>` : ''}
-    `;
-    
-    // Drag handlers managed by global event delegation in initializeDragAndDrop
-    // Click and keyboard handlers managed by global event delegation in setupEventListeners
-    
-    return card;
-}
-
-// Helper function: Create a door element with products (supports empty doors)
-function createDoorFromSlot(slot, slotIndex, sectionId) {
-    const door = document.createElement('div');
-    door.className = 'door';
-    door.dataset.doorIndex = slotIndex;
-    door.dataset.slotIndex = slotIndex;
-    door.dataset.sectionId = sectionId;
-    
-    // Make door draggable for drop target
-    door.setAttribute('draggable', 'false');
-    
-    // Check if slot is empty or occupied by expanded card
-    const isEmpty = slot.products === null || (Array.isArray(slot.products) && slot.products.length === 0);
-    const isExpandedOccupied = slot.products === null;
-    
-    if (isExpandedOccupied) {
-        door.classList.add('expanded-occupied');
-    } else if (isEmpty) {
-        door.classList.add('empty');
-    }
-    
-    // Create door handle
-    const handle = document.createElement('div');
-    handle.className = 'door-handle';
-    
-    // Create labels container (shown when closed)
-    const labelsContainer = document.createElement('div');
-    labelsContainer.className = 'door-labels';
-    
-    // Create stock display container (shown when open)
-    const stockDisplay = document.createElement('div');
-    stockDisplay.className = 'door-stock-display';
-    
-    // Handle different slot states
-    if (isExpandedOccupied) {
-        // Slot occupied by expanded card from previous slot
-        const occupiedLabel = document.createElement('div');
-        occupiedLabel.className = 'door-occupied-label';
-        occupiedLabel.textContent = '↑ Occupé';
-        labelsContainer.appendChild(occupiedLabel);
-    } else if (isEmpty) {
-        // Empty slot
-        const emptyLabel = document.createElement('div');
-        emptyLabel.className = 'door-empty-label';
-        emptyLabel.textContent = 'Vide';
-        labelsContainer.appendChild(emptyLabel);
-    } else {
-        // Slot with products
-        slot.products.forEach(sku => {
-            const product = allProducts.find(p => p.sku === sku);
-            if (!product) return;
-            
-            // Create card for labels container
-            const card = createDoorProductCard(product);
-            labelsContainer.appendChild(card);
-            
-            // Add stock info for open state
-            const stockItem = document.createElement('div');
-            stockItem.className = 'door-stock-item';
-            
-            const stockName = document.createElement('div');
-            stockName.className = 'door-stock-name';
-            stockName.textContent = product.name;
-            
-            const stockCount = document.createElement('div');
-            stockCount.className = 'door-stock-count';
-            stockCount.textContent = '0'; // Stock count set to 0 for now
-            stockCount.dataset.sku = product.sku;
-            
-            stockItem.appendChild(stockName);
-            stockItem.appendChild(stockCount);
-            stockDisplay.appendChild(stockItem);
-        });
-    }
-    
-    door.appendChild(labelsContainer);
-    door.appendChild(stockDisplay);
-    door.appendChild(handle);
-    
-    // Event delegation on main handles drag & drop
-    
-    return door;
-}
-
-function createDrawerFromSlot(slot, slotIndex, sectionId) {
-    const drawer = document.createElement('div');
-    drawer.className = 'drawer';
-    drawer.dataset.drawerIndex = slotIndex;
-    drawer.dataset.slotIndex = slotIndex;
-    drawer.dataset.sectionId = sectionId;
-    
-    // Make drawer draggable for drop target
-    drawer.setAttribute('draggable', 'false');
-    
-    // Check if slot is empty
-    const isEmpty = Array.isArray(slot.products) && slot.products.length === 0;
-    
-    if (isEmpty) {
-        drawer.classList.add('empty');
-    }
-    
-    // Create drawer handle
-    const handle = document.createElement('div');
-    handle.className = 'drawer-handle';
-    
-    // Create labels container (shown when closed)
-    const labelsContainer = document.createElement('div');
-    labelsContainer.className = 'drawer-labels';
-    
-    // Create stock display container (shown when open)
-    const stockDisplay = document.createElement('div');
-    stockDisplay.className = 'drawer-stock-display';
-    
-    // Handle different slot states
-    if (isEmpty) {
-        // Empty slot
-        const emptyLabel = document.createElement('div');
-        emptyLabel.className = 'drawer-empty-label';
-        emptyLabel.textContent = 'Vide';
-        labelsContainer.appendChild(emptyLabel);
-    } else {
-        // Slot with products
-        slot.products.forEach(sku => {
-            const product = allProducts.find(p => p.sku === sku);
-            if (!product) return;
-            
-            // Get THC value
-            const thcValue = product.manualThc || product.thcMax;
-            // Get CBD value
-            const cbdValue = product.manualCbd || product.cbd || 0;
-            const showCbd = cbdValue > 0;
-            
-            // Check if product matches current filters
-            const isVisible = productMatchesFilters(product);
-            
-            // Get display mode for this product
-            const displayMode = getProductDisplayMode(product.sku);
-            
-            // Build class list
-            let cardClasses = 'drawer-product-card';
-            if (!isVisible) cardClasses += ' card-hidden';
-            if (displayMode.split) cardClasses += ' split';
-            if (isSpecialFormat(product.format)) cardClasses += ' special-format';
-            
-            // Create card
-            const card = document.createElement('div');
-            card.className = cardClasses;
-            card.dataset.type = product.type;
-            card.dataset.sku = product.sku;
-            card.setAttribute('role', 'button');
-            card.setAttribute('tabindex', '0');
-            card.setAttribute('draggable', 'true');
-            card.setAttribute('aria-label', `${product.name}, ${thcValue}% THC, cliquez pour modifier`);
-            
-            card.innerHTML = `
-                <button class="product-remove-btn" data-sku="${product.sku}" title="Retirer de cette section" aria-label="Retirer ${product.name} de cette section">&times;</button>
-                <button class="product-split-btn ${displayMode.split ? 'active' : ''}" data-sku="${product.sku}" title="Diviser en demi-largeur" aria-label="Diviser ${product.name} en demi-largeur">⇔</button>
-                <div class="drawer-product-name">${product.name}</div>
-                <div class="drawer-product-thc">
-                    <div class="drawer-thc-value">${thcValue}%</div>
-                </div>
-                ${showCbd ? `<div class="drawer-product-cbd">${cbdValue}%</div>` : ''}
-            `;
-            
-            // Drag handlers for reordering
-            card.addEventListener('dragstart', handleDragStart);
-            card.addEventListener('dragover', handleDragOver);
-            card.addEventListener('drop', handleDrop);
-            card.addEventListener('dragend', handleDragEnd);
-            
-            labelsContainer.appendChild(card);
-            
-            // Add stock info for open state
-            const stockItem = document.createElement('div');
-            stockItem.className = 'drawer-stock-item';
-            
-            const stockName = document.createElement('div');
-            stockName.className = 'drawer-stock-name';
-            stockName.textContent = product.name;
-            
-            const stockCount = document.createElement('div');
-            stockCount.className = 'drawer-stock-count';
-            stockCount.textContent = '0'; // Stock count set to 0 for now
-            stockCount.dataset.sku = product.sku;
-            
-            stockItem.appendChild(stockName);
-            stockItem.appendChild(stockCount);
-            stockDisplay.appendChild(stockItem);
-        });
-    }
-    
-    drawer.appendChild(labelsContainer);
-    drawer.appendChild(stockDisplay);
-    drawer.appendChild(handle);
-    
-    // Event delegation on main handles drag & drop
-    
-    return drawer;
+    return createProductCardElement(product, 'door', true);
 }
 
 // New storage-based rendering functions
@@ -870,48 +660,8 @@ function createSlotElement(slot, storageIndex, slotIndex, sectionId, storageType
 }
 
 function createDrawerProductCard(product) {
-    const thcValue = product.manualThc || product.thcMax;
-    const cbdValue = product.manualCbd || product.cbd || 0;
-    const showCbd = cbdValue > 0;
-    
-    // Check if product matches current filters
-    const isVisible = productMatchesFilters(product);
-    
-    // Get display mode for this product
-    const displayMode = getProductDisplayMode(product.sku);
-    
-    // Build class list
-    let cardClasses = 'drawer-product-card';
-    if (!isVisible) cardClasses += ' card-hidden';
-    if (displayMode.split) cardClasses += ' split';
-    if (isSpecialFormat(product.format)) cardClasses += ' special-format';
-    
-    // Create card
-    const card = document.createElement('div');
-    card.className = cardClasses;
-    card.dataset.type = product.type;
-    card.dataset.sku = product.sku;
-    card.setAttribute('role', 'button');
-    card.setAttribute('tabindex', '0');
-    card.setAttribute('draggable', 'true');
-    card.setAttribute('aria-label', `${product.name}, ${thcValue}% THC, cliquez pour modifier`);
-    
-    card.innerHTML = `
-        <button class="product-remove-btn" data-sku="${product.sku}" title="Retirer de cette section" aria-label="Retirer ${product.name} de cette section">&times;</button>
-        <button class="product-split-btn ${displayMode.split ? 'active' : ''}" data-sku="${product.sku}" title="Diviser en demi-largeur" aria-label="Diviser ${product.name} en demi-largeur">⇔</button>
-        <div class="drawer-product-name">${product.name}</div>
-        <div class="drawer-product-thc">
-            <div class="drawer-thc-value">${thcValue}%</div>
-        </div>
-        ${showCbd ? `<div class="drawer-product-cbd">${cbdValue}%</div>` : ''}
-    `;
-    
-    // Drag handlers managed by global event delegation in initializeDragAndDrop
-    
-    return card;
+    return createProductCardElement(product, 'drawer', false);
 }
-
-// Legacy static rendering functions removed - using dynamic sections only
 
 // Main render function - uses dynamic sections only
 function renderProducts() {
@@ -951,17 +701,21 @@ function renderProductsDynamic() {
     });
 }
 
-function renderDoorsGridDynamic(grid, products, section) {
+// Unified rendering function for storage grids (doors and drawers)
+function renderStorageGrid(grid, products, section) {
     grid.innerHTML = '';
     
     const sectionId = grid.id;
+    const storageType = section.storageType;
     const storageCount = section.storageCount || 12;
-    const slotsPerStorage = CONFIG.DOOR_CONFIG.productsPerDoor; // 6 slots per door
+    const slotsPerStorage = storageType === 'door' ? 
+        CONFIG.DOOR_CONFIG.productsPerDoor : 
+        CONFIG.DRAWER_CONFIG.productsPerDrawer;
     
-    // Initialize storage structure for this section if not exists
-    const sectionData = initializeSectionStorages(sectionId, 'door', storageCount, slotsPerStorage);
+    // Initialize storage structure
+    const sectionData = initializeSectionStorages(sectionId, storageType, storageCount, slotsPerStorage);
     
-    // Auto-assign products that are not yet assigned to any slot
+    // Auto-assign unassigned products
     const assignedSkus = new Set();
     sectionData.storages.forEach(storage => {
         storage.slots.forEach(slot => {
@@ -976,49 +730,28 @@ function renderDoorsGridDynamic(grid, products, section) {
         autoAssignProductsToStorages(sectionId, unassignedProducts);
     }
     
-    // Render each storage (door)
+    // Render storages
+    const createStorageFunc = storageType === 'door' ? createDoorFromStorage : createDrawerFromStorage;
     sectionData.storages.forEach((storage, storageIndex) => {
-        const door = createDoorFromStorage(storage, storageIndex, sectionId);
-        grid.appendChild(door);
+        const storageElement = createStorageFunc(storage, storageIndex, sectionId);
+        grid.appendChild(storageElement);
     });
 }
 
+// Legacy compatibility wrappers
+function renderDoorsGridDynamic(grid, products, section) {
+    renderStorageGrid(grid, products, section);
+}
+
 function renderDrawersGridDynamic(grid, products, section) {
-    grid.innerHTML = '';
-    
-    const sectionId = grid.id;
-    const storageCount = section.storageCount || 12;
-    const slotsPerStorage = CONFIG.DRAWER_CONFIG.productsPerDrawer; // 2 slots per drawer
-    
-    // Initialize storage structure for this section if not exists
-    const sectionData = initializeSectionStorages(sectionId, 'drawer', storageCount, slotsPerStorage);
-    
-    // Auto-assign products that are not yet assigned to any slot
-    const assignedSkus = new Set();
-    sectionData.storages.forEach(storage => {
-        storage.slots.forEach(slot => {
-            if (Array.isArray(slot.products)) {
-                slot.products.forEach(sku => assignedSkus.add(sku));
-            }
-        });
-    });
-    
-    const unassignedProducts = products.filter(p => !assignedSkus.has(p.sku));
-    if (unassignedProducts.length > 0) {
-        autoAssignProductsToStorages(sectionId, unassignedProducts);
-    }
-    
-    // Render each storage (drawer)
-    sectionData.storages.forEach((storage, storageIndex) => {
-        const drawer = createDrawerFromStorage(storage, storageIndex, sectionId);
-        grid.appendChild(drawer);
-    });
+    renderStorageGrid(grid, products, section);
 }
 
 // Update product counts
 function updateCounts() {
     // Dynamic sections only - no fallback
     updateDynamicSectionCounts();
+    updateWallStatistics();
 }
 
 // Modal functions for editing cards (using SKU for unique identification)
@@ -1391,7 +1124,7 @@ function loadProductFormatChanges() {
 
 // Drag-and-drop functions - Simple swap approach
 // ============================================
-// Section Slots System - Fixed grid with empty slots
+// Slot Management System
 // ============================================
 
 function saveSectionSlots() {
@@ -1644,8 +1377,7 @@ function moveProduct(fromSectionId, fromStorageIndex, fromSlotIndex, toSectionId
         const targetMode = targetProduct ? getProductDisplayMode(targetSku) : { split: false };
         
         if (draggedMode.split && targetMode.split) {
-            // ADD operation: both are split, they can share the slot
-            console.log(`Adding split ${sku} to slot with split ${targetSku} (sharing slot)`);
+            // Both split: share the slot
             
             // Remove from source
             if (!removeProductFromSlot(fromSectionId, fromStorageIndex, fromSlotIndex, sku)) {
@@ -1665,9 +1397,7 @@ function moveProduct(fromSectionId, fromStorageIndex, fromSlotIndex, toSectionId
             return true;
         }
         
-        // SWAP operation: not both splits, perform traditional swap
-        // Step 1: Free expanded slots for both products before removing
-        console.log(`Swap: Freeing expanded slots before swap`);
+        // SWAP operation: exchange positions
         freeExpandedSlots(fromSectionId, fromStorageIndex, fromSlotIndex, sku);
         freeExpandedSlots(toSectionId, toStorageIndex, toSlotIndex, targetSku);
         
@@ -1940,185 +1670,90 @@ function toggleProductExpandHeight(sku) {
 // ============================================
 
 function handleDragStart(e) {
-    // Support all card types and empty slots
     const card = e.target.closest('.product-card, .door-product-card, .drawer-product-card');
-    
     if (!card || !card.hasAttribute('draggable')) return;
     
     const slot = card.closest('.slot');
     const grid = card.closest('.products-grid');
-    
     if (!grid) return;
     
-    // Get storage and slot indexes from parent slot
-    let storageIndex = -1;
-    let slotIndex = -1;
-    
-    if (slot) {
-        storageIndex = parseInt(slot.dataset.storageIndex);
-        slotIndex = parseInt(slot.dataset.slotIndex);
-    }
+    const storageIndex = slot ? parseInt(slot.dataset.storageIndex) : -1;
+    const slotIndex = slot ? parseInt(slot.dataset.slotIndex) : -1;
 
-    dragState.draggedElement = card;
-    dragState.draggedSku = card.dataset.sku;
-    dragState.sourceGridId = grid.id;
-    dragState.sourceStorageIndex = storageIndex;
-    dragState.sourceSlotIndex = slotIndex;
-
-    // Add visual feedback
-    setTimeout(() => {
-        card.classList.add('dragging');
-    }, 0);
+    dragManager.start(card, card.dataset.sku, grid.id, storageIndex, slotIndex);
 
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', dragState.draggedSku);
-    
-    console.log(`Drag start: SKU ${dragState.draggedSku} from storage ${storageIndex} slot ${slotIndex}`);
+    e.dataTransfer.setData('text/plain', card.dataset.sku);
 }
 
 function handleDragEnd() {
-    const card = dragState.draggedElement;
-    
-    if (card) {
-        card.classList.remove('dragging');
+    if (dragManager.performMove()) {
+        refreshDisplay();
     }
-
-    // Perform the move if we have valid source and destination
-    if (dragState.sourceGridId && dragState.sourceStorageIndex !== null && dragState.sourceSlotIndex !== null && 
-        dragState.dropStorageIndex !== null && dragState.dropSlotIndex !== null && dragState.draggedSku) {
-        
-        const fromSection = dragState.sourceGridId;
-        const toSection = dragState.sourceGridId; // Same grid for now
-        
-        // Only move if different slots
-        const differentSlots = dragState.sourceStorageIndex !== dragState.dropStorageIndex || 
-                              dragState.sourceSlotIndex !== dragState.dropSlotIndex;
-        
-        if (differentSlots) {
-            const success = moveProduct(
-                fromSection,
-                dragState.sourceStorageIndex,
-                dragState.sourceSlotIndex,
-                toSection,
-                dragState.dropStorageIndex,
-                dragState.dropSlotIndex,
-                dragState.draggedSku
-            );
-            
-            if (success) {
-                // Refresh display to show new layout
-                refreshDisplay();
-            }
-        }
-    }
-
-    // Remove all visual feedback
-    document.querySelectorAll('.product-card, .door-product-card, .drawer-product-card').forEach(c => {
-        c.classList.remove('drag-over');
-    });
-    document.querySelectorAll('.slot, .door, .drawer').forEach(s => {
-        s.classList.remove('drag-over', 'drag-invalid');
-    });
-    document.querySelectorAll('.products-grid').forEach(g => g.classList.remove('drag-active'));
-
-    // Reset drag state
-    dragState.draggedElement = null;
-    dragState.draggedSku = null;
-    dragState.sourceGridId = null;
-    dragState.sourceStorageIndex = null;
-    dragState.sourceSlotIndex = null;
-    dragState.dropTarget = null;
-    dragState.dropStorageIndex = null;
-    dragState.dropSlotIndex = null;
+    dragManager.cleanup();
 }
 
 function handleDragOver(e) {
     e.preventDefault();
 
-    if (!dragState.draggedElement) return;
+    if (!dragManager.draggedElement) return;
 
     const grid = e.target.closest('.products-grid');
-    if (!grid || !dragState.sourceGridId) return;
-
-    // Only allow drop in the same grid
-    if (grid.id !== dragState.sourceGridId) {
+    if (!grid || grid.id !== dragManager.sourceGridId) {
         e.dataTransfer.dropEffect = 'none';
         return;
     }
 
-    // Find the slot being hovered over
     const slot = e.target.closest('.slot');
-    console.log('DragOver - e.target:', e.target.className, 'slot found:', slot?.className, 'dataset:', slot?.dataset);
-    let storageIndex = -1;
-    let slotIndex = -1;
+    if (!slot) return;
     
-    if (slot) {
-        storageIndex = parseInt(slot.dataset.storageIndex);
-        slotIndex = parseInt(slot.dataset.slotIndex);
-    }
+    const storageIndex = parseInt(slot.dataset.storageIndex);
+    const slotIndex = parseInt(slot.dataset.slotIndex);
     
-    if (storageIndex === -1 || slotIndex === -1) {
-        console.log('DragOver - No valid slot found. storageIndex:', storageIndex, 'slotIndex:', slotIndex);
-        return;
-    }
+    if (storageIndex === -1 || slotIndex === -1) return;
     
-    // Check if this is a swap operation vs an add (sharing) operation
+    // Determine if swap or add operation
     const targetSlot = getSlot(grid.id, storageIndex, slotIndex);
-    
-    // Determine if this is a swap or an add:
-    // Swap = slot is occupied AND cannot accept another product (full or incompatible)
-    // Add = slot can accept the dragged product (empty or compatible split)
     let isSwap = false;
+    
     if (targetSlot && Array.isArray(targetSlot.products) && targetSlot.products.length > 0) {
-        const draggedMode = getProductDisplayMode(dragState.draggedSku);
+        const draggedMode = getProductDisplayMode(dragManager.draggedSku);
         
         if (targetSlot.products.length === 2) {
-            // Slot is full (2 splits) - must be a swap
             isSwap = true;
         } else if (targetSlot.products.length === 1) {
             const existingProduct = allProducts.find(p => p.sku === targetSlot.products[0]);
             if (existingProduct) {
                 const existingMode = getProductDisplayMode(existingProduct.sku);
-                // If both are split, it's an ADD (sharing), not a swap
-                // Otherwise it's a swap
                 isSwap = !(draggedMode.split && existingMode.split);
             }
         }
     }
     
-    // Check if we can add to this slot
-    const canAdd = canAddToSlot(grid.id, storageIndex, slotIndex, dragState.draggedSku, isSwap);
+    const canAdd = canAddToSlot(grid.id, storageIndex, slotIndex, dragManager.draggedSku, isSwap);
     
     if (canAdd) {
         e.dataTransfer.dropEffect = 'move';
         grid.classList.add('drag-active');
-        if (slot) {
-            slot.classList.add('drag-over');
-            slot.classList.remove('drag-invalid');
-        }
-        dragState.dropStorageIndex = storageIndex;
-        dragState.dropSlotIndex = slotIndex;
+        slot.classList.add('drag-over');
+        slot.classList.remove('drag-invalid');
+        dragManager.setDropTarget(storageIndex, slotIndex);
     } else {
         e.dataTransfer.dropEffect = 'none';
-        if (slot) {
-            slot.classList.add('drag-invalid');
-            slot.classList.remove('drag-over');
-        }
-        dragState.dropStorageIndex = null;
-        dragState.dropSlotIndex = null;
+        slot.classList.add('drag-invalid');
+        slot.classList.remove('drag-over');
+        dragManager.setDropTarget(null, null);
     }
 }
 
 function handleDrop(e) {
     e.preventDefault();
     e.stopPropagation();
-    
-    // The move will be handled in handleDragEnd
     return false;
 }
 
 function handleDragEnter(e) {
-    // Visual feedback handled in handleDragOver
+    e.preventDefault();
 }
 
 function handleDragLeave(e) {
@@ -2849,6 +2484,78 @@ function generateFormCheckboxes() {
     }
 }
 
+function toggleSectionZoom(sectionId, buttonElement) {
+    const section = document.querySelector(`[data-section-id="${sectionId}"]`);
+    if (!section) return;
+    
+    const grid = section.querySelector('.products-grid');
+    if (!grid) return;
+    
+    // Get current zoom level
+    let currentZoom = parseInt(buttonElement.dataset.zoomLevel) || 100;
+    
+    // Cycle through zoom levels: 100% -> 80% -> 60% -> 100%
+    let newZoom;
+    if (currentZoom === 100) {
+        newZoom = 80;
+    } else if (currentZoom === 80) {
+        newZoom = 60;
+    } else {
+        newZoom = 100;
+    }
+    
+    // Apply zoom
+    grid.style.transform = `scale(${newZoom / 100})`;
+    grid.style.transformOrigin = 'top left';
+    
+    // Update button
+    buttonElement.dataset.zoomLevel = newZoom;
+    buttonElement.title = `Ajuster la taille (${newZoom}%)`;
+    
+    // Add visual feedback
+    if (newZoom === 100) {
+        buttonElement.style.backgroundColor = '';
+    } else {
+        buttonElement.style.backgroundColor = 'rgba(255, 215, 0, 0.3)';
+    }
+    
+    // Save preference
+    try {
+        const zoomPrefs = JSON.parse(localStorage.getItem('sectionZoomPrefs') || '{}');
+        zoomPrefs[sectionId] = newZoom;
+        localStorage.setItem('sectionZoomPrefs', JSON.stringify(zoomPrefs));
+    } catch (error) {
+        console.error('Error saving zoom preference:', error);
+    }
+}
+
+function applySavedZoomLevels() {
+    try {
+        const zoomPrefs = JSON.parse(localStorage.getItem('sectionZoomPrefs') || '{}');
+        
+        Object.entries(zoomPrefs).forEach(([sectionId, zoomLevel]) => {
+            const section = document.querySelector(`[data-section-id="${sectionId}"]`);
+            if (!section) return;
+            
+            const grid = section.querySelector('.products-grid');
+            const button = section.querySelector('.section-zoom-btn');
+            
+            if (grid && button) {
+                grid.style.transform = `scale(${zoomLevel / 100})`;
+                grid.style.transformOrigin = 'top left';
+                button.dataset.zoomLevel = zoomLevel;
+                button.title = `Ajuster la taille (${zoomLevel}%)`;
+                
+                if (zoomLevel !== 100) {
+                    button.style.backgroundColor = 'rgba(255, 215, 0, 0.3)';
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error loading zoom preferences:', error);
+    }
+}
+
 function switchWallView(wallPosition) {
     currentWall = wallPosition;
     
@@ -2867,7 +2574,91 @@ function switchWallView(wallPosition) {
     // Re-render products
     renderProducts();
     
+    // Update statistics
+    updateWallStatistics();
+    
+    // Apply saved zoom levels
+    setTimeout(() => applySavedZoomLevels(), 100);
+    
     console.log('Switched to wall:', wallPosition);
+}
+
+// Update wall statistics display
+function updateWallStatistics() {
+    // Get elements
+    const statPlacedProducts = document.getElementById('statPlacedProducts');
+    const statUnplacedProducts = document.getElementById('statUnplacedProducts');
+    const statDoorsCount = document.getElementById('statDoorsCount');
+    const statDrawersCount = document.getElementById('statDrawersCount');
+    const statEmptySlots = document.getElementById('statEmptySlots');
+    
+    if (!statPlacedProducts) return; // Elements not yet loaded
+    
+    // Get all sections on current wall
+    const wallSections = sectionsConfig.filter(s => s.visible && s.wallPosition === currentWall);
+    
+    // Count doors and drawers
+    let doorsCount = 0;
+    let drawersCount = 0;
+    wallSections.forEach(section => {
+        if (section.storageType === 'door') {
+            doorsCount += section.storageCount || 0;
+        } else if (section.storageType === 'drawer') {
+            drawersCount += section.storageCount || 0;
+        }
+    });
+    
+    // Calculate placed products and empty slots
+    let placedProducts = new Set();
+    let emptySlots = 0;
+    let totalSlots = 0;
+    
+    wallSections.forEach(section => {
+        const gridId = `${section.id}-grid`;
+        const sectionData = sectionSlots[gridId];
+        
+        if (sectionData && sectionData.storages) {
+            sectionData.storages.forEach(storage => {
+                storage.slots.forEach(slot => {
+                    totalSlots++;
+                    
+                    if (slot.products === null) {
+                        // Slot occupied by expanded card - not counted as empty
+                        return;
+                    }
+                    
+                    if (Array.isArray(slot.products)) {
+                        if (slot.products.length === 0) {
+                            emptySlots++;
+                        } else {
+                            slot.products.forEach(sku => {
+                                const product = allProducts.find(p => p.sku === sku);
+                                if (product) {
+                                    placedProducts.add(sku);
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+        }
+    });
+    
+    // Calculate products that should be on this wall but aren't placed
+    const wallProducts = new Set();
+    wallSections.forEach(section => {
+        const products = getProductsForSection(section, 'all');
+        products.forEach(p => wallProducts.add(p.sku));
+    });
+    
+    const unplacedProducts = Array.from(wallProducts).filter(sku => !placedProducts.has(sku)).length;
+    
+    // Update display
+    statPlacedProducts.textContent = placedProducts.size;
+    statUnplacedProducts.textContent = unplacedProducts;
+    statDoorsCount.textContent = doorsCount;
+    statDrawersCount.textContent = drawersCount;
+    statEmptySlots.textContent = emptySlots;
 }
 
 // ============================================
@@ -3056,43 +2847,59 @@ function generateSectionHeader(section) {
     const titleH2 = document.createElement('h2');
     titleH2.textContent = section.name;
     
-    // Create edit button
-    const editBtn = document.createElement('button');
-    editBtn.className = 'section-edit-btn';
-    editBtn.innerHTML = '<span>✏️</span> Éditer';
-    editBtn.title = 'Ouvrir l\'éditeur de section';
-    editBtn.setAttribute('aria-label', `Éditer la section ${section.name}`);
-    editBtn.addEventListener('click', (e) => {
+    // Create zoom button
+    const zoomBtn = document.createElement('button');
+    zoomBtn.className = 'section-zoom-btn';
+    zoomBtn.innerHTML = '🔍';
+    zoomBtn.title = 'Ajuster la taille (100%)';
+    zoomBtn.dataset.zoomLevel = '100';
+    zoomBtn.setAttribute('aria-label', `Ajuster la taille de la section ${section.name}`);
+    zoomBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        openSectionFullEditorModal(section.id);
+        toggleSectionZoom(section.id, zoomBtn);
     });
     
-    // Create product count
-    const countSpan = document.createElement('span');
-    countSpan.className = 'product-count';
-    countSpan.id = `${section.id}-count`;
-    countSpan.textContent = '0';
+    // Create section statistics container
+    const statsContainer = document.createElement('div');
+    statsContainer.className = 'section-stats';
+    statsContainer.id = `${section.id}-stats`;
     
-    // Create storage type indicator
-    const storageSpan = document.createElement('span');
+    // Create individual stat elements
+    const placedStat = document.createElement('span');
+    placedStat.className = 'section-stat';
+    placedStat.innerHTML = '<span class="stat-icon">📦</span><span class="stat-value" id="' + section.id + '-placed">0</span>';
+    placedStat.title = 'Produits placés';
+    
+    const unplacedStat = document.createElement('span');
+    unplacedStat.className = 'section-stat';
+    unplacedStat.innerHTML = '<span class="stat-icon">⚠️</span><span class="stat-value" id="' + section.id + '-unplaced">0</span>';
+    unplacedStat.title = 'Produits non placés';
+    
+    const emptyStat = document.createElement('span');
+    emptyStat.className = 'section-stat';
+    emptyStat.innerHTML = '<span class="stat-icon">⬜</span><span class="stat-value" id="' + section.id + '-empty">0</span>';
+    emptyStat.title = 'Emplacements vides';
+    
+    const storageStat = document.createElement('span');
+    storageStat.className = 'section-stat';
     if (section.storageType === 'door') {
-        storageSpan.className = 'storage-indicator storage-door';
-        storageSpan.title = 'Section avec portes';
-        storageSpan.textContent = `🚪 ${section.storageCount}`;
+        storageStat.innerHTML = '<span class="stat-icon">🚪</span><span class="stat-value">' + section.storageCount + '</span>';
+        storageStat.title = 'Nombre de portes';
     } else if (section.storageType === 'drawer') {
-        storageSpan.className = 'storage-indicator storage-drawer';
-        storageSpan.title = 'Section avec tiroirs';
-        storageSpan.textContent = `📦 ${section.storageCount}`;
+        storageStat.innerHTML = '<span class="stat-icon">🗄️</span><span class="stat-value">' + section.storageCount + '</span>';
+        storageStat.title = 'Nombre de tiroirs';
     }
+    
+    statsContainer.appendChild(placedStat);
+    statsContainer.appendChild(unplacedStat);
+    statsContainer.appendChild(emptyStat);
+    statsContainer.appendChild(storageStat);
     
     // Append all elements
     header.appendChild(iconSpan);
     header.appendChild(titleH2);
-    header.appendChild(editBtn);
-    header.appendChild(countSpan);
-    if (storageSpan.className) {
-        header.appendChild(storageSpan);
-    }
+    header.appendChild(zoomBtn);
+    header.appendChild(statsContainer);
     
     return header;
 }
@@ -3232,12 +3039,52 @@ function getProductsForSection(section, formatType) {
 
 function updateDynamicSectionCounts() {
     sectionsConfig.forEach(section => {
-        // Section count - single count per section now
-        const countEl = document.getElementById(`${section.id}-count`);
-        if (countEl) {
-            const products = allProducts.filter(p => matchesSection(p, section) && productMatchesFilters(p));
-            countEl.textContent = products.length;
+        if (!section.visible) return;
+        
+        const gridId = `${section.id}-grid`;
+        const sectionData = sectionSlots[gridId];
+        
+        // Calculate section-specific statistics
+        let placedProducts = new Set();
+        let emptySlots = 0;
+        
+        if (sectionData && sectionData.storages) {
+            sectionData.storages.forEach(storage => {
+                storage.slots.forEach(slot => {
+                    if (slot.products === null) {
+                        // Slot occupied by expanded card - not counted as empty
+                        return;
+                    }
+                    
+                    if (Array.isArray(slot.products)) {
+                        if (slot.products.length === 0) {
+                            emptySlots++;
+                        } else {
+                            slot.products.forEach(sku => {
+                                const product = allProducts.find(p => p.sku === sku);
+                                if (product) {
+                                    placedProducts.add(sku);
+                                }
+                            });
+                        }
+                    }
+                });
+            });
         }
+        
+        // Calculate products that should be in this section but aren't placed
+        const sectionProducts = getProductsForSection(section, 'all');
+        const sectionProductSkus = new Set(sectionProducts.map(p => p.sku));
+        const unplacedProducts = Array.from(sectionProductSkus).filter(sku => !placedProducts.has(sku)).length;
+        
+        // Update display
+        const placedElement = document.getElementById(`${section.id}-placed`);
+        const unplacedElement = document.getElementById(`${section.id}-unplaced`);
+        const emptyElement = document.getElementById(`${section.id}-empty`);
+        
+        if (placedElement) placedElement.textContent = placedProducts.size;
+        if (unplacedElement) unplacedElement.textContent = unplacedProducts;
+        if (emptyElement) emptyElement.textContent = emptySlots;
     });
 }
 
@@ -3658,41 +3505,41 @@ function setupEventListeners() {
         generateSkuBtn.addEventListener('click', generateAutoSku);
     }
     
-    // Section Full Editor Modal handlers
-    const sectionFullEditorCloseBtn = document.getElementById('sectionFullEditorCloseBtn');
-    const sectionFullEditorCancelBtn = document.getElementById('sectionFullEditorCancelBtn');
-    const sectionFullEditorSaveBtn = document.getElementById('sectionFullEditorSaveBtn');
-    const addStorageBtn = document.getElementById('addStorageBtn');
-    const removeStorageBtn = document.getElementById('removeStorageBtn');
-    const sidebarSearchInput = document.getElementById('sidebarSearchInput');
-    
-    if (sectionFullEditorCloseBtn) {
-        sectionFullEditorCloseBtn.addEventListener('click', () => closeSectionFullEditorModal(false));
-    }
-    if (sectionFullEditorCancelBtn) {
-        sectionFullEditorCancelBtn.addEventListener('click', () => closeSectionFullEditorModal(false));
-    }
-    if (sectionFullEditorSaveBtn) {
-        sectionFullEditorSaveBtn.addEventListener('click', () => closeSectionFullEditorModal(true));
-    }
-    if (addStorageBtn) {
-        addStorageBtn.addEventListener('click', addStorageUnit);
-    }
-    if (removeStorageBtn) {
-        removeStorageBtn.addEventListener('click', removeStorageUnit);
-    }
-    if (sidebarSearchInput) {
-        sidebarSearchInput.addEventListener('input', (e) => handleSidebarSearch(e.target.value));
-    }
-    
-    // Sidebar filter buttons
-    document.querySelectorAll('.sidebar-filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.sidebar-filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            handleSidebarFilter(btn.dataset.filter);
-        });
-    });
+// REMOVED:     // Section Full Editor Modal handlers
+// REMOVED:     const sectionFullEditorCloseBtn = document.getElementById('sectionFullEditorCloseBtn');
+// REMOVED:     const sectionFullEditorCancelBtn = document.getElementById('sectionFullEditorCancelBtn');
+// REMOVED:     const sectionFullEditorSaveBtn = document.getElementById('sectionFullEditorSaveBtn');
+// REMOVED:     const addStorageBtn = document.getElementById('addStorageBtn');
+// REMOVED:     const removeStorageBtn = document.getElementById('removeStorageBtn');
+// REMOVED:     const sidebarSearchInput = document.getElementById('sidebarSearchInput');
+// REMOVED:     
+// REMOVED:     if (sectionFullEditorCloseBtn) {
+// REMOVED:         sectionFullEditorCloseBtn.addEventListener('click', () => closeSectionFullEditorModal(false));
+// REMOVED:     }
+// REMOVED:     if (sectionFullEditorCancelBtn) {
+// REMOVED:         sectionFullEditorCancelBtn.addEventListener('click', () => closeSectionFullEditorModal(false));
+// REMOVED:     }
+// REMOVED:     if (sectionFullEditorSaveBtn) {
+// REMOVED:         sectionFullEditorSaveBtn.addEventListener('click', () => closeSectionFullEditorModal(true));
+// REMOVED:     }
+// REMOVED:     if (addStorageBtn) {
+// REMOVED:         addStorageBtn.addEventListener('click', addStorageUnit);
+// REMOVED:     }
+// REMOVED:     if (removeStorageBtn) {
+// REMOVED:         removeStorageBtn.addEventListener('click', removeStorageUnit);
+// REMOVED:     }
+// REMOVED:     if (sidebarSearchInput) {
+// REMOVED:         sidebarSearchInput.addEventListener('input', (e) => handleSidebarSearch(e.target.value));
+// REMOVED:     }
+// REMOVED:     
+// REMOVED:     // Sidebar filter buttons
+// REMOVED:     document.querySelectorAll('.sidebar-filter-btn').forEach(btn => {
+// REMOVED:         btn.addEventListener('click', () => {
+// REMOVED:             document.querySelectorAll('.sidebar-filter-btn').forEach(b => b.classList.remove('active'));
+// REMOVED:             btn.classList.add('active');
+// REMOVED:             handleSidebarFilter(btn.dataset.filter);
+// REMOVED:         });
+// REMOVED:     });
 }
 
 // ============================================
@@ -4232,6 +4079,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Generate form checkboxes for section editor
     generateFormCheckboxes();
+    
+    // Initialize custom tooltip
+    initCustomTooltip();
     
     // Load products
     loadProducts();
@@ -4838,728 +4688,101 @@ function applySavedRowHeight() {
 }
 
 // ============================================
-// SECTION FULL EDITOR MODAL
+// SECTION FULL EDITOR MODAL - REMOVED
 // ============================================
+// All section editor code and functions have been removed
 
-let sectionFullEditorState = {
-    isOpen: false,
-    currentSectionId: null,
-    originalSectionSlots: null, // Backup for cancel
-    placedProducts: new Set() // Track which products are placed
-};
+// ============================================
+// CUSTOM TOOLTIP HANDLER
+// ============================================
+// Create a global tooltip element that follows cursor
+let customTooltip = null;
 
-/**
- * Open the full-screen section editor modal
- * @param {string} sectionId - The ID of the section to edit
- */
-function openSectionFullEditorModal(sectionId) {
-    console.log('Opening section full editor for:', sectionId);
-    
-    const section = getSectionById(sectionId);
-    if (!section) {
-        console.error('Section not found:', sectionId);
-        alert('Erreur: Section introuvable');
-        return;
-    }
-    
-    // Store current state
-    sectionFullEditorState.isOpen = true;
-    sectionFullEditorState.currentSectionId = sectionId;
-    
-    // Backup current section slots for cancel functionality
-    const gridId = `${sectionId}-grid`;
-    if (sectionSlots[gridId]) {
-        sectionFullEditorState.originalSectionSlots = JSON.parse(JSON.stringify(sectionSlots[gridId]));
-    }
-    
-    // Get modal elements
-    const modal = document.getElementById('sectionFullEditorModal');
-    if (!modal) {
-        console.error('Modal element not found in DOM');
-        alert('Erreur: Modal introuvable dans le DOM');
-        return;
-    }
-    const title = document.getElementById('sectionFullEditorTitle');
-    const canvasSectionName = document.getElementById('canvasSectionName');
-    const canvasStorageType = document.getElementById('canvasStorageType');
-    const canvasStorageCount = document.getElementById('canvasStorageCount');
-    
-    // Set title and info
-    title.textContent = `Éditeur: ${section.name}`;
-    canvasSectionName.textContent = section.name;
-    canvasStorageType.textContent = section.storageType === 'door' ? '🚪 Portes' : '📦 Tiroirs';
-    canvasStorageCount.textContent = `${section.storageCount} unités`;
-    
-    // Show modal
-    modal.classList.add('active');
-    
-    // Prevent body scroll
-    document.body.style.overflow = 'hidden';
-    
-    // Render canvas and palette
-    renderSectionFullEditorCanvas();
-    renderSectionFullEditorPalette();
-    
-    console.log('Section full editor opened for:', sectionId);
-}
-
-/**
- * Close the full-screen section editor modal
- * @param {boolean} save - Whether to save changes or cancel
- */
-function closeSectionFullEditorModal(save = false) {
-    if (!sectionFullEditorState.isOpen) return;
-    
-    const modal = document.getElementById('sectionFullEditorModal');
-    
-    if (!save) {
-        // Restore original state if canceling
-        if (sectionFullEditorState.originalSectionSlots && sectionFullEditorState.currentSectionId) {
-            const gridId = `${sectionFullEditorState.currentSectionId}-grid`;
-            sectionSlots[gridId] = sectionFullEditorState.originalSectionSlots;
-        }
-    } else {
-        // Save changes to localStorage
-        saveSectionSlots();
-        
-        // Refresh main view to show changes
-        refreshDisplay();
-    }
-    
-    // Hide modal
-    modal.classList.remove('active');
-    
-    // Restore body scroll
-    document.body.style.overflow = '';
-    
-    // Clear state
-    sectionFullEditorState.isOpen = false;
-    sectionFullEditorState.currentSectionId = null;
-    sectionFullEditorState.originalSectionSlots = null;
-    sectionFullEditorState.placedProducts.clear();
-    
-    console.log('Section full editor closed, saved:', save);
-}
-
-/**
- * Render the section canvas in the modal
- */
-function renderSectionFullEditorCanvas() {
-    const section = getSectionById(sectionFullEditorState.currentSectionId);
-    if (!section) return;
-    
-    const canvasGrid = document.getElementById('sectionFullEditorCanvasGrid');
-    const gridId = `${section.id}-grid`;
-    
-    // Clear canvas
-    canvasGrid.innerHTML = '';
-    
-    // Apply appropriate class for layout
-    canvasGrid.className = 'canvas-grid';
-    if (section.storageType === 'door') {
-        canvasGrid.classList.add('canvas-doors');
-    } else {
-        canvasGrid.classList.add('canvas-drawers');
-    }
-    
-    // Initialize storage if needed
-    const slotsPerStorage = section.storageType === 'door' ? 
-        CONFIG.DOOR_CONFIG.productsPerDoor : 
-        CONFIG.DRAWER_CONFIG.productsPerDrawer;
-    
-    initializeSectionStorages(gridId, section.storageType, section.storageCount, slotsPerStorage);
-    
-    const sectionData = sectionSlots[gridId];
-    if (!sectionData || !sectionData.storages) return;
-    
-    // Track placed products
-    sectionFullEditorState.placedProducts.clear();
-    
-    // Render each storage unit
-    sectionData.storages.forEach((storage, storageIndex) => {
-        const storageElement = section.storageType === 'door' ? 
-            createDoorFromStorage(storage, storageIndex, gridId) :
-            createDrawerFromStorage(storage, storageIndex, gridId);
-        
-        canvasGrid.appendChild(storageElement);
-        
-        // Track placed products
-        storage.slots.forEach(slot => {
-            if (Array.isArray(slot.products)) {
-                slot.products.forEach(sku => sectionFullEditorState.placedProducts.add(sku));
-            }
-        });
-    });
-    
-    // Update product count
-    updateCanvasStats();
-    
-    // Initialize drag and drop for canvas
-    initializeCanvasDragAndDrop();
-}
-
-/**
- * Get all available products including hidden ones
- * @returns {Array} All products from database and user-created
- */
-function getAllAvailableProducts() {
-    // Start with all products from database
-    let availableProducts = [...(window.PRODUCTS_DATA || [])];
-    
-    // Add user-created products from localStorage
-    try {
-        const saved = localStorage.getItem(CONFIG.STORAGE_KEYS.NEW_PRODUCTS);
-        if (saved) {
-            const newProducts = JSON.parse(saved);
-            newProducts.forEach(product => {
-                if (!availableProducts.find(p => p.sku === product.sku)) {
-                    availableProducts.push(product);
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Error loading new products:', error);
-    }
-    
-    // Add hidden products from localStorage (they should be available in palette)
-    try {
-        const hiddenSkus = localStorage.getItem(CONFIG.STORAGE_KEYS.HIDDEN_PRODUCTS);
-        if (hiddenSkus) {
-            const hiddenSkusList = JSON.parse(hiddenSkus);
-            // Hidden products might be in PRODUCTS_DATA or NEW_PRODUCTS
-            // They're not in allProducts, so we need to get them from original sources
-            hiddenSkusList.forEach(sku => {
-                const hiddenProduct = availableProducts.find(p => p.sku === sku);
-                // Product already in availableProducts, no need to add
-                if (hiddenProduct) {
-                    // Mark it as hidden for UI purposes if needed
-                    hiddenProduct.isHidden = true;
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Error loading hidden products:', error);
-    }
-    
-    return availableProducts;
-}
-
-/**
- * Render the product palette sidebar
- */
-function renderSectionFullEditorPalette() {
-    const section = getSectionById(sectionFullEditorState.currentSectionId);
-    if (!section) return;
-    
-    const palette = document.getElementById('sectionFullEditorPalette');
-    const sidebarCount = document.getElementById('sidebarProductCount');
-    
-    // Get all available products (includes hidden and user-created)
-    const allAvailableProducts = getAllAvailableProducts();
-    
-    // Filter by section criteria
-    const allMatchingProducts = allAvailableProducts.filter(product => matchesSection(product, section));
-    
-    // Get all products that are currently placed in ANY section
-    const placedInAnySection = new Set();
-    sectionsConfig.forEach(sec => {
-        if (!sec.visible) return;
-        const gridId = `${sec.id}-grid`;
-        const sectionData = sectionSlots[gridId];
-        if (sectionData && sectionData.storages) {
-            sectionData.storages.forEach(storage => {
-                storage.slots.forEach(slot => {
-                    if (Array.isArray(slot.products)) {
-                        slot.products.forEach(sku => placedInAnySection.add(sku));
-                    }
-                });
-            });
-        }
-    });
-    
-    // Filter to only show products that are NOT placed anywhere
-    const unplacedProducts = allMatchingProducts.filter(product => 
-        !placedInAnySection.has(product.sku)
-    );
-    
-    // Clear palette
-    palette.innerHTML = '';
-    
-    // Render each product as a draggable card
-    unplacedProducts.forEach(product => {
-        const card = createPaletteProductCard(product);
-        palette.appendChild(card);
-    });
-    
-    // Update count
-    sidebarCount.textContent = `${unplacedProducts.length} produit${unplacedProducts.length !== 1 ? 's' : ''}`;
-    
-    // Apply empty class if needed
-    if (unplacedProducts.length === 0) {
-        palette.classList.add('empty');
-    } else {
-        palette.classList.remove('empty');
-    }
-}
-
-/**
- * Create a product card for the palette
- */
-function createPaletteProductCard(product) {
-    const thcValue = product.manualThc || product.thcMax;
-    
-    const card = document.createElement('div');
-    card.className = 'palette-product-card';
-    card.dataset.type = product.type;
-    card.dataset.sku = product.sku;
-    card.setAttribute('draggable', 'true');
-    
-    if (isSpecialFormat(product.format)) {
-        card.classList.add('special-format');
-    }
-    
-    card.innerHTML = `
-        <div class="palette-product-name">${product.name}</div>
-        <div class="palette-product-thc">${thcValue}%</div>
+function initCustomTooltip() {
+    // Create tooltip element
+    customTooltip = document.createElement('div');
+    customTooltip.className = 'custom-tooltip-global';
+    customTooltip.style.cssText = `
+        position: fixed;
+        background-color: rgba(0, 0, 0, 0.95);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 2.1rem;
+        font-weight: 600;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.1s ease;
+        z-index: 99999;
+        border: 1px solid #FFD700;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        display: none;
     `;
-    
-    // Drag event handlers
-    card.addEventListener('dragstart', handlePaletteDragStart);
-    card.addEventListener('dragend', handlePaletteDragEnd);
-    
-    return card;
+    document.body.appendChild(customTooltip);
+
+    // Add event delegation for all product cards
+    document.addEventListener('mouseover', handleTooltipShow);
+    document.addEventListener('mouseout', handleTooltipHide);
+    document.addEventListener('mousemove', handleTooltipMove);
 }
 
-/**
- * Handle drag start from palette
- */
-function handlePaletteDragStart(e) {
-    const card = e.target;
-    const sku = card.dataset.sku;
+function handleTooltipShow(e) {
+    const card = e.target.closest('.door-product-card, .drawer-product-card');
+    if (!card || !customTooltip) return;
     
-    card.classList.add('dragging-from-palette');
+    const tooltipText = card.getAttribute('data-tooltip');
+    if (!tooltipText) return;
     
-    // Store drag data
-    dragState.draggedElement = card;
-    dragState.draggedSku = sku;
-    dragState.sourceGridId = 'palette'; // Special marker for palette source
-    dragState.sourceStorageIndex = null;
-    dragState.sourceSlotIndex = null;
+    customTooltip.textContent = tooltipText;
+    customTooltip.style.display = 'block';
     
-    e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData('text/plain', sku);
+    // Position tooltip above cursor
+    updateTooltipPosition(e);
     
-    console.log('Drag from palette:', sku);
+    // Show immediately
+    customTooltip.style.opacity = '1';
 }
 
-/**
- * Handle drag end from palette
- */
-function handlePaletteDragEnd(e) {
-    const card = e.target;
-    card.classList.remove('dragging-from-palette');
+function handleTooltipHide(e) {
+    if (!customTooltip) return;
     
-    // Clean up drag state
-    if (dragState.sourceGridId === 'palette') {
-        dragState.draggedElement = null;
-        dragState.draggedSku = null;
-        dragState.sourceGridId = null;
+    // Check if we're leaving a card and not entering another card
+    const fromCard = e.target.closest('.door-product-card, .drawer-product-card');
+    const toCard = e.relatedTarget?.closest('.door-product-card, .drawer-product-card');
+    
+    if (fromCard && !toCard) {
+        customTooltip.style.opacity = '0';
+        customTooltip.style.display = 'none';
     }
 }
 
-/**
- * Initialize drag and drop for canvas elements
- */
-function initializeCanvasDragAndDrop() {
-    const canvasGrid = document.getElementById('sectionFullEditorCanvasGrid');
-    if (!canvasGrid) {
-        console.error('Canvas grid not found');
-        return;
-    }
-    
-    console.log('Initializing canvas drag and drop');
-    
-    // Add drop handlers to all slots
-    const slots = canvasGrid.querySelectorAll('.slot');
-    console.log('Found slots:', slots.length);
-    slots.forEach(element => {
-        element.addEventListener('dragover', handleCanvasDragOver);
-        element.addEventListener('drop', handleCanvasDrop);
-        element.addEventListener('dragleave', handleCanvasDragLeave);
-    });
-    
-    // Add drop handlers to doors/drawers themselves (for empty ones)
-    const containers = canvasGrid.querySelectorAll('.door, .drawer');
-    console.log('Found door/drawer containers:', containers.length);
-    containers.forEach(element => {
-        element.addEventListener('dragover', handleCanvasDragOver);
-        element.addEventListener('drop', handleCanvasDrop);
-        element.addEventListener('dragleave', handleCanvasDragLeave);
-    });
-    
-    // Make existing products in canvas draggable
-    const cards = canvasGrid.querySelectorAll('.door-product-card, .drawer-product-card');
-    console.log('Found product cards:', cards.length);
-    cards.forEach(card => {
-        card.addEventListener('dragstart', handleCanvasProductDragStart);
-        card.addEventListener('dragend', handleCanvasProductDragEnd);
-    });
+function handleTooltipMove(e) {
+    if (!customTooltip || customTooltip.style.display === 'none') return;
+    updateTooltipPosition(e);
 }
 
-/**
- * Handle drag over canvas elements
- */
-function handleCanvasDragOver(e) {
-    e.preventDefault();
+function updateTooltipPosition(e) {
+    if (!customTooltip) return;
     
-    if (!dragState.draggedSku) return;
+    const tooltipWidth = customTooltip.offsetWidth;
+    const tooltipHeight = customTooltip.offsetHeight;
     
-    let dropTarget = e.currentTarget;
-    const section = getSectionById(sectionFullEditorState.currentSectionId);
-    const gridId = `${section.id}-grid`;
+    // Position above cursor, centered
+    let x = e.clientX - (tooltipWidth / 2);
+    let y = e.clientY - tooltipHeight - 15;
     
-    // Get storage and slot indices
-    let storageIndex = parseInt(dropTarget.dataset.storageIndex);
-    let slotIndex = parseInt(dropTarget.dataset.slotIndex);
-    
-    // If we're on a slot, we have both indices
-    if (!isNaN(storageIndex) && !isNaN(slotIndex)) {
-        // Already on a slot, good to go
+    // Keep tooltip within viewport bounds
+    const padding = 10;
+    if (x < padding) x = padding;
+    if (x + tooltipWidth > window.innerWidth - padding) {
+        x = window.innerWidth - tooltipWidth - padding;
     }
-    // If dropping on door/drawer container (not a slot), find the first empty slot
-    else if (!isNaN(storageIndex) && isNaN(slotIndex)) {
-        // We're on a door/drawer container, find first available slot
-        const sectionData = sectionSlots[gridId];
-        if (sectionData && sectionData.storages && sectionData.storages[storageIndex]) {
-            const storage = sectionData.storages[storageIndex];
-            // Find first empty or available slot
-            let foundSlot = false;
-            for (let i = 0; i < storage.slots.length; i++) {
-                const slot = storage.slots[i];
-                if (slot.products === null) continue; // Skip occupied by expansion
-                if (!Array.isArray(slot.products) || slot.products.length === 0) {
-                    slotIndex = i;
-                    foundSlot = true;
-                    break;
-                }
-            }
-            // If no empty slot found, try first slot anyway (might allow stacking)
-            if (!foundSlot) {
-                slotIndex = 0;
-            }
-        } else {
-            e.dataTransfer.dropEffect = 'none';
-            return;
-        }
-    }
-    else {
-        // Invalid drop target
-        console.log('Invalid drop target, missing indices');
-        e.dataTransfer.dropEffect = 'none';
-        return;
+    if (y < padding) {
+        // If no room above, show below cursor
+        y = e.clientY + 15;
     }
     
-    // Check if can add to slot
-    const isFromPalette = dragState.sourceGridId === 'palette';
-    const canAdd = canAddToSlot(gridId, storageIndex, slotIndex, dragState.draggedSku, !isFromPalette);
-    
-    // Apply visual feedback
-    dropTarget.classList.remove('drop-zone-valid', 'drop-zone-invalid');
-    if (canAdd) {
-        dropTarget.classList.add('drop-zone-valid');
-        e.dataTransfer.dropEffect = isFromPalette ? 'copy' : 'move';
-    } else {
-        dropTarget.classList.add('drop-zone-invalid');
-        e.dataTransfer.dropEffect = 'none';
-    }
-    
-    // Store drop target
-    dragState.dropStorageIndex = storageIndex;
-    dragState.dropSlotIndex = slotIndex;
-}
-
-/**
- * Handle drag leave from canvas elements
- */
-function handleCanvasDragLeave(e) {
-    const dropTarget = e.currentTarget;
-    dropTarget.classList.remove('drop-zone-valid', 'drop-zone-invalid');
-}
-
-/**
- * Handle drop on canvas
- */
-function handleCanvasDrop(e) {
-    e.preventDefault();
-    
-    const dropTarget = e.currentTarget;
-    dropTarget.classList.remove('drop-zone-valid', 'drop-zone-invalid');
-    
-    if (!dragState.draggedSku || dragState.dropStorageIndex === null || dragState.dropSlotIndex === null) {
-        console.log('Drop failed: missing drag state', dragState);
-        return;
-    }
-    
-    const section = getSectionById(sectionFullEditorState.currentSectionId);
-    const gridId = `${section.id}-grid`;
-    
-    const isFromPalette = dragState.sourceGridId === 'palette';
-    
-    console.log('Drop on canvas:', {
-        sku: dragState.draggedSku,
-        isFromPalette,
-        storage: dragState.dropStorageIndex,
-        slot: dragState.dropSlotIndex
-    });
-    
-    if (isFromPalette) {
-        // Ensure product is in allProducts (could be hidden or from database)
-        let product = allProducts.find(p => p.sku === dragState.draggedSku);
-        
-        if (!product) {
-            // Product not in allProducts, get it from available products
-            const allAvailableProducts = getAllAvailableProducts();
-            product = allAvailableProducts.find(p => p.sku === dragState.draggedSku);
-            
-            if (product) {
-                console.log('Adding product to allProducts:', product.name);
-                allProducts.push(product);
-                
-                // If it was hidden, remove from hidden list
-                removeFromHiddenProducts(product.sku);
-            } else {
-                console.error('Product not found:', dragState.draggedSku);
-                alert('Erreur: Produit introuvable');
-                dragState.dropStorageIndex = null;
-                dragState.dropSlotIndex = null;
-                return;
-            }
-        }
-        
-        // Add product from palette to canvas
-        const success = addProductToSlot(gridId, dragState.dropStorageIndex, dragState.dropSlotIndex, dragState.draggedSku);
-        
-        if (success) {
-            console.log('Added product from palette to canvas');
-            // Re-render canvas and palette
-            renderSectionFullEditorCanvas();
-            renderSectionFullEditorPalette();
-        } else {
-            console.error('Failed to add product to slot');
-        }
-    } else {
-        // Move product within canvas
-        const success = moveProduct(
-            gridId,
-            dragState.sourceStorageIndex,
-            dragState.sourceSlotIndex,
-            gridId,
-            dragState.dropStorageIndex,
-            dragState.dropSlotIndex,
-            dragState.draggedSku
-        );
-        
-        if (success) {
-            console.log('Moved product within canvas');
-            // Re-render canvas
-            renderSectionFullEditorCanvas();
-            renderSectionFullEditorPalette();
-        } else {
-            console.error('Failed to move product');
-        }
-    }
-    
-    // Reset drag state
-    dragState.dropStorageIndex = null;
-    dragState.dropSlotIndex = null;
-}
-
-/**
- * Handle drag start for products in canvas
- */
-function handleCanvasProductDragStart(e) {
-    const card = e.target;
-    const sku = card.dataset.sku;
-    const slot = card.closest('.slot');
-    
-    if (!slot) return;
-    
-    const storageIndex = parseInt(slot.dataset.storageIndex);
-    const slotIndex = parseInt(slot.dataset.slotIndex);
-    const gridId = `${sectionFullEditorState.currentSectionId}-grid`;
-    
-    dragState.draggedElement = card;
-    dragState.draggedSku = sku;
-    dragState.sourceGridId = gridId;
-    dragState.sourceStorageIndex = storageIndex;
-    dragState.sourceSlotIndex = slotIndex;
-    
-    card.classList.add('dragging');
-    
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', sku);
-    
-    console.log('Drag from canvas:', sku, 'storage:', storageIndex, 'slot:', slotIndex);
-}
-
-/**
- * Handle drag end for products in canvas
- */
-function handleCanvasProductDragEnd(e) {
-    const card = e.target;
-    card.classList.remove('dragging');
-    
-    // Reset drag state
-    dragState.draggedElement = null;
-    dragState.draggedSku = null;
-    dragState.sourceGridId = null;
-    dragState.sourceStorageIndex = null;
-    dragState.sourceSlotIndex = null;
-}
-
-/**
- * Update canvas statistics
- */
-function updateCanvasStats() {
-    const canvasProductCount = document.getElementById('canvasProductCount');
-    const count = sectionFullEditorState.placedProducts.size;
-    canvasProductCount.textContent = `${count} produit${count !== 1 ? 's' : ''} placé${count !== 1 ? 's' : ''}`;
-}
-
-/**
- * Add a new storage unit (door/drawer) to the section
- */
-function addStorageUnit() {
-    const section = getSectionById(sectionFullEditorState.currentSectionId);
-    if (!section) return;
-    
-    const gridId = `${section.id}-grid`;
-    const sectionData = sectionSlots[gridId];
-    
-    if (!sectionData || !sectionData.storages) {
-        console.error('Section data not found');
-        return;
-    }
-    
-    // Determine slots per storage
-    const slotsPerStorage = section.storageType === 'door' ? 
-        CONFIG.DOOR_CONFIG.productsPerDoor : 
-        CONFIG.DRAWER_CONFIG.productsPerDrawer;
-    
-    // Create new empty storage with slots
-    const newStorageIndex = sectionData.storages.length;
-    const newStorage = {
-        index: newStorageIndex,
-        slots: []
-    };
-    
-    // Create empty slots for the new storage
-    for (let i = 0; i < slotsPerStorage; i++) {
-        newStorage.slots.push({
-            index: i,
-            products: []
-        });
-    }
-    
-    // Add new storage to section data
-    sectionData.storages.push(newStorage);
-    
-    // Increase storage count in section config
-    section.storageCount++;
-    
-    // Update section config
-    updateSection(section.id, { storageCount: section.storageCount });
-    
-    // Save section slots
-    saveSectionSlots();
-    
-    // Update UI
-    document.getElementById('canvasStorageCount').textContent = `${section.storageCount} unités`;
-    
-    // Re-render canvas
-    renderSectionFullEditorCanvas();
-    
-    console.log('Added storage unit, new count:', section.storageCount);
-}
-
-/**
- * Remove the last storage unit (door/drawer) from the section
- */
-function removeStorageUnit() {
-    const section = getSectionById(sectionFullEditorState.currentSectionId);
-    if (!section || section.storageCount <= 1) return;
-    
-    const gridId = `${section.id}-grid`;
-    const sectionData = sectionSlots[gridId];
-    
-    if (!sectionData || !sectionData.storages) return;
-    
-    // Check if last storage has products
-    const lastStorage = sectionData.storages[sectionData.storages.length - 1];
-    const hasProducts = lastStorage.slots.some(slot => 
-        Array.isArray(slot.products) && slot.products.length > 0
-    );
-    
-    if (hasProducts) {
-        const confirmed = confirm('Cette porte/tiroir contient des produits. Les retirer quand même?');
-        if (!confirmed) return;
-    }
-    
-    // Remove last storage
-    sectionData.storages.pop();
-    section.storageCount--;
-    
-    // Update section config
-    updateSection(section.id, { storageCount: section.storageCount });
-    
-    // Save section slots
-    saveSectionSlots();
-    
-    // Update UI
-    document.getElementById('canvasStorageCount').textContent = `${section.storageCount} unités`;
-    
-    // Re-render canvas and palette
-    renderSectionFullEditorCanvas();
-    renderSectionFullEditorPalette();
-    
-    console.log('Removed storage unit, new count:', section.storageCount);
-}
-
-/**
- * Handle sidebar search
- */
-function handleSidebarSearch(query) {
-    const palette = document.getElementById('sectionFullEditorPalette');
-    const cards = palette.querySelectorAll('.palette-product-card');
-    
-    const lowerQuery = query.toLowerCase();
-    
-    cards.forEach(card => {
-        const name = card.querySelector('.palette-product-name').textContent.toLowerCase();
-        if (name.includes(lowerQuery)) {
-            card.style.display = '';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-}
-
-/**
- * Handle sidebar filter
- */
-function handleSidebarFilter(filter) {
-    const palette = document.getElementById('sectionFullEditorPalette');
-    const cards = palette.querySelectorAll('.palette-product-card');
-    
-    cards.forEach(card => {
-        const isPlaced = card.classList.contains('already-placed');
-        
-        if (filter === 'all') {
-            card.style.display = '';
-        } else if (filter === 'available') {
-            card.style.display = isPlaced ? 'none' : '';
-        } else if (filter === 'placed') {
-            card.style.display = isPlaced ? '' : 'none';
-        }
-    });
+    customTooltip.style.left = `${x}px`;
+    customTooltip.style.top = `${y}px`;
 }
