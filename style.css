@@ -343,8 +343,6 @@ main {
     flex-shrink: 0;
     flex-grow: 0;
     position: relative;
-    container-type: inline-size;
-    container-name: section;
 }
 
 .strain-section.hidden {
@@ -771,28 +769,6 @@ main.row-resizing .row-resize-handle {
     overflow: visible;
 }
 
-/* Scale drawers when section is wider */
-@container section (min-width: 300px) {
-    .drawer {
-        width: clamp(240px, 20%, 320px);
-        padding: 10px;
-    }
-}
-
-@container section (min-width: 400px) {
-    .drawer {
-        width: clamp(260px, 22%, 350px);
-        padding: 12px;
-    }
-}
-
-@container section (min-width: 500px) {
-    .drawer {
-        width: clamp(280px, 25%, 380px);
-        padding: 14px;
-    }
-}
-
 .drawer:hover {
     border-color: rgba(255, 215, 0, 0.9);
     transform: translateY(-2px);
@@ -933,37 +909,6 @@ main.row-resizing .row-resize-handle {
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     position: relative;
     flex-shrink: 0;
-}
-
-/* Scale drawer cards when section is wider */
-@container section (min-width: 300px) {
-    .drawer-product-card {
-        min-width: 105px;
-        min-height: 105px;
-        max-width: 145px;
-        padding: 5px;
-        font-size: clamp(10px, 0.85vw, 12px);
-    }
-}
-
-@container section (min-width: 400px) {
-    .drawer-product-card {
-        min-width: 115px;
-        min-height: 115px;
-        max-width: 160px;
-        padding: 6px;
-        font-size: clamp(11px, 0.95vw, 13px);
-    }
-}
-
-@container section (min-width: 500px) {
-    .drawer-product-card {
-        min-width: 125px;
-        min-height: 125px;
-        max-width: 175px;
-        padding: 8px;
-        font-size: clamp(12px, 1vw, 14px);
-    }
 }
 
 /* Prevent native title tooltip from showing */
@@ -1155,28 +1100,6 @@ main.row-resizing .row-resize-handle {
     overflow: visible;
 }
 
-/* Scale doors when section is wider */
-@container section (min-width: 300px) {
-    .door {
-        width: clamp(140px, 15%, 200px);
-        padding: 8px;
-    }
-}
-
-@container section (min-width: 400px) {
-    .door {
-        width: clamp(160px, 18%, 220px);
-        padding: 10px;
-    }
-}
-
-@container section (min-width: 500px) {
-    .door {
-        width: clamp(180px, 20%, 240px);
-        padding: 12px;
-    }
-}
-
 .door:hover {
     border-color: rgba(76, 175, 80, 0.9);
     transform: translateX(-2px);
@@ -1297,28 +1220,6 @@ main.row-resizing .row-resize-handle {
     position: relative;
     flex-shrink: 0;
     z-index: 1;
-}
-
-/* Scale door cards when section is wider */
-@container section (min-width: 300px) {
-    .door-product-card {
-        font-size: clamp(10px, 0.85vw, 12px);
-        padding: 5px;
-    }
-}
-
-@container section (min-width: 400px) {
-    .door-product-card {
-        font-size: clamp(11px, 0.95vw, 13px);
-        padding: 6px;
-    }
-}
-
-@container section (min-width: 500px) {
-    .door-product-card {
-        font-size: clamp(12px, 1vw, 14px);
-        padding: 8px;
-    }
 }
 
 /* Prevent child elements from blocking drag events */
